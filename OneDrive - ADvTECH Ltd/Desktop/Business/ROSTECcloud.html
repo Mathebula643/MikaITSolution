@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cloud — Functional Process (Prototype)</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa7bf; --accent:#5dd1b6; --danger:#ff6b6b;
+      --glass: rgba(255,255,255,0.03);
+      --max-width:1100px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,Segoe UI,system-ui,Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg,#071027 0%, #081226 100%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:24px;
+      display:flex;
+      justify-content:center;
+    }
+    .app{
+      width:100%; max-width:var(--max-width);
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:20px;
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:48px;height:48px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),#34b3ff);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#032027;
+      box-shadow:0 6px 18px rgba(5,16,28,0.6);
+    }
+    h1{font-size:18px;margin:0}
+    header nav{display:flex;gap:8px;align-items:center}
+    button, .btn{
+      background:transparent;border:1px solid rgba(255,255,255,0.06); padding:8px 12px;border-radius:8px;color:var(--accent);
+      cursor:pointer;font-weight:600;
+    }
+    main{display:grid; grid-template-columns: 300px 1fr; gap:20px;}
+    .sidebar{
+      background:var(--card); padding:16px; border-radius:12px; height:calc(100vh - 170px);
+      position:sticky; top:24px; overflow:auto;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px; padding:14px; margin-bottom:14px; box-shadow:0 2px 10px rgba(2,6,23,0.6);
+    }
+    .muted{color:var(--muted); font-size:13px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer}
+    .nav-item:hover{background:rgba(255,255,255,0.02)}
+    .active{background:linear-gradient(90deg, rgba(93,209,182,0.08),rgba(52,179,255,0.03)); border-left:3px solid var(--accent); padding-left:8px}
+    .content{
+      min-height:80vh; padding:16px; border-radius:12px;
+    }
+    .top-row{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px}
+    .upload-area{
+      border:2px dashed rgba(255,255,255,0.04); padding:20px; border-radius:12px; text-align:center; transition:background .15s;
+    }
+    .upload-area.dragover{background:rgba(93,209,182,0.035)}
+    input[type=file]{display:none}
+    .files-list{margin-top:12px}
+    .file-item{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:8px;margin-bottom:8px;background:var(--glass)}
+    .file-meta{display:flex;align-items:center;gap:12px}
+    .badge{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px;font-size:13px}
+    .log{max-height:160px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:13px}
+    .small{font-size:13px}
+    .profile{
+      display:flex;align-items:center;gap:12px
+    }
+    .profile .avatar{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#ffd66b,#ff8a6b);display:flex;align-items:center;justify-content:center;font-weight:700;color:#2b0a00}
+    .modal{
+      position:fixed;inset:0;background:rgba(2,6,23,0.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000;
+    }
+    .modal .box{width:100%;max-width:520px;background:#061226;padding:20px;border-radius:12px}
+    input[type=text], input[type=email], input[type=password], select{
+      width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;margin-top:8px;
+    }
+    label{display:block;margin-top:10px;color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px}
+    .flex{display:flex;gap:8px}
+    .tiny{font-size:12px;color:var(--muted)}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.04)}
+    .danger{background:linear-gradient(180deg,rgba(255,107,107,0.06),transparent); border:1px solid rgba(255,107,107,0.08); color:var(--danger)}
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+    .folder{font-weight:700}
+    .link{color:#8ecfff; cursor:pointer}
+    .progress{height:10px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#34b3ff);width:0%}
+    .switch{display:inline-flex;align-items:center;gap:8px}
+    .small-btn{padding:6px 8px;border-radius:8px;font-size:13px}
+    .hidden{display:none}
+    .trash-empty{opacity:0.6;font-size:13px}
+    pre{white-space:pre-wrap;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">☁️</div>
+        <div>
+          <h1>Cloud — Functional Process</h1>
+          <div class="tiny muted">Prototype: registration → secure encrypted uploads → file management → billing (ZAR)</div>
+        </div>
+      </div>
+      <nav id="header-controls">
+        <!-- dynamic -->
+      </nav>
+    </header>
+
+    <main>
+      <aside class="sidebar card" id="sidebar">
+        <!-- visible when logged in -->
+      </aside>
+
+      <section class="content card" id="mainContent">
+        <!-- login / register or dashboard -->
+      </section>
+    </main>
+
+    <footer>
+      © 2024 MATHEBULA T.A. All rights reserved
+    </footer>
+  </div>
+
+  <!-- Modals -->
+  <div id="modalRoot" class="hidden"></div>
+
+<script>
+/*
+  Client-side Cloud Storage Prototype
+  - Users stored in localStorage ("cloud_users")
+  - Files stored encrypted in localStorage under "cloud_files"
+  - Current session in sessionStorage ("cloud_session")
+  - Storage measured in bytes; default allocation provided
+  - Encryption: derived key from password using PBKDF2 -> AES-GCM for content encrypt/decrypt
+  - Versioning: when uploading same path/name, previous version is kept
+  - Sharing: generates a share token (link simulated)
+  - ACL: simple owner + permission object (view/edit)
+  - Activity log stored per file and global
+*/
+
+const APP = (function(){
+  // --- Storage helpers & data structures ---
+  const USERS_KEY = 'cloud_users_v1';
+  const FILES_KEY = 'cloud_files_v1';
+  const SESSION_KEY = 'cloud_session_v1';
+
+  // default plan values
+  const DEFAULT_ALLOCATION = 5 * 1024 * 1024; // 5 MB for demo
+  const PLANS = [
+    {id:'free', label:'Free', storage: DEFAULT_ALLOCATION, priceZAR: 0},
+    {id:'pro', label:'Pro Monthly', storage: 50 * 1024 * 1024, priceZAR: 49.99},
+    {id:'business', label:'Business Monthly', storage: 200 * 1024 * 1024, priceZAR: 199.99}
+  ];
+
+  // util
+  function save(key, obj){ localStorage.setItem(key, JSON.stringify(obj)); }
+  function load(key, def){ const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
+  function saveSession(obj){ sessionStorage.setItem(SESSION_KEY, JSON.stringify(obj)); }
+  function loadSession(){ const v = sessionStorage.getItem(SESSION_KEY); return v ? JSON.parse(v) : null; }
+  function bytesToHuman(b){
+    if (b < 1024) return b + ' B';
+    if (b < 1024*1024) return (b/1024).toFixed(2) + ' KB';
+    if (b < 1024*1024*1024) return (b/(1024*1024)).toFixed(2) + ' MB';
+    return (b/(1024*1024*1024)).toFixed(2) + ' GB';
+  }
+  function nowISO(){ return new Date().toISOString(); }
+
+  // persistence getters
+  function getUsers(){ return load(USERS_KEY, {}); }
+  function setUsers(u){ save(USERS_KEY, u); }
+  function getFiles(){ return load(FILES_KEY, {}); }
+  function setFiles(f){ save(FILES_KEY, f); }
+
+  // --- Crypto helpers (Web Crypto) ---
+  // derive a key from password + salt (email used as salt)
+  async function deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(password), {name:'PBKDF2'}, false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: enc.encode(salt), iterations: 200000, hash: 'SHA-256' },
+      baseKey,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt','decrypt']
+    );
+  }
+  async function encryptData(key, arrayBuffer){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, arrayBuffer);
+    // store iv + ciphertext in base64
+    const combined = new Uint8Array(iv.byteLength + ct.byteLength);
+    combined.set(iv,0); combined.set(new Uint8Array(ct), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+  }
+  async function decryptData(key, b64){
+    const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const iv = bin.slice(0,12);
+    const ct = bin.slice(12);
+    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct);
+    return plain;
+  }
+
+  // --- Session & auth ---
+  async function registerUser({name,email,password}) {
+    const users = getUsers();
+    if (users[email]) throw new Error('Email already registered');
+    // simulate email verification by generating a code and requiring "verify"
+    const verificationCode = Math.floor(Math.random()*900000)+100000;
+    users[email] = {
+      name, email, // don't store password raw in real life; we'll store a salted hash for demo
+      createdAt: nowISO(),
+      verified: false,
+      verificationCode: String(verificationCode),
+      allocation: DEFAULT_ALLOCATION,
+      planId: 'free',
+      role: 'user'
+    };
+    setUsers(users);
+    // simulate sending code
+    console.log('VERIFICATION CODE (demo only):', verificationCode);
+    return users[email];
+  }
+
+  function verifyUser(email, code){
+    const users = getUsers();
+    if (!users[email]) throw new Error('Unknown user');
+    if (users[email].verificationCode === String(code)){
+      users[email].verified = true;
+      delete users[email].verificationCode;
+      setUsers(users);
+      return true;
+    }
+    return false;
+  }
+
+  async function loginUser({email,password, use2fa=false}) {
+    const users = getUsers();
+    const u = users[email];
+    if (!u) throw new Error('No such user');
+    if (!u.verified) throw new Error('Account not verified. Please verify email before logging in.');
+    // in this demo we accept any password but derive key from it for encryption. In real world you'd check a hash.
+    const key = await deriveKey(password, email);
+    const session = { email, token: Math.random().toString(36).slice(2), loggedAt: nowISO() };
+    saveSession(session);
+    // store derived key in memory (not in storage) for the session
+    window.__sessionKey = key;
+    return session;
+  }
+
+  function logout(){
+    sessionStorage.removeItem(SESSION_KEY);
+    window.__sessionKey = null;
+  }
+
+  // --- Files & metadata ---
+  // file structure stored as:
+  // files = { "<email>": { "<path>": { versions: [{id, b64, size, date, name}], metadata: {...}, acl: {...}, activity: [] } } }
+  function ensureUserFiles(email){
+    const files = getFiles();
+    if (!files[email]) { files[email] = {}; setFiles(files); }
+    return files[email];
+  }
+
+  async function uploadFile(email, path, fileObj, encryptKey){
+    // path is string like "/folder1/file.txt" (if folder '', use '/')
+    const files = getFiles();
+    ensureUserFiles(email);
+    if (!files[email]) files[email] = {};
+    const entry = files[email][path] || {
+      versions: [],
+      metadata: { name: fileObj.name, type: fileObj.type, size: fileObj.size, createdAt: nowISO(), path },
+      acl: { owner: email, permissions: { [email]: 'owner' } },
+      activity: []
+    };
+
+    // read file, encrypt, store base64
+    const arrayBuffer = await fileObj.arrayBuffer();
+    const encrypted = await encryptData(encryptKey, arrayBuffer);
+
+    // push version
+    const version = { id: Math.random().toString(36).slice(2), content: encrypted, size: fileObj.size, date: nowISO(), name: fileObj.name };
+    entry.versions.unshift(version);
+    entry.metadata.size = fileObj.size;
+    entry.metadata.type = fileObj.type;
+    entry.metadata.modifiedAt = nowISO();
+
+    // log activity
+    entry.activity.unshift(`[${nowISO()}] Uploaded version ${version.id} (${bytesToHuman(version.size)})`);
+    files[email][path] = entry;
+    setFiles(files);
+    addGlobalActivity(email, `Uploaded ${path} (${bytesToHuman(fileObj.size)})`);
+    return entry;
+  }
+
+  function getUserFiles(email){
+    const files = getFiles();
+    return files[email] || {};
+  }
+
+  function deleteFile(email, path){
+    const files = getFiles();
+    ensureUserFiles(email);
+    const entry = files[email][path];
+    if (!entry) return false;
+    // move to trash — store under special folder __trash__ with timestamp
+    const trashKey = `__trash__/${Date.now()}_${path.replace(/\//g,'_')}`;
+    files[email][trashKey] = { ...entry, trashedAt: nowISO(), originalPath: path };
+    delete files[email][path];
+    setFiles(files);
+    addGlobalActivity(email, `Deleted ${path} → trash`);
+    return true;
+  }
+
+  function restoreFromTrash(email, trashKey, restoreTo){
+    const files = getFiles();
+    ensureUserFiles(email);
+    const entry = files[email][trashKey];
+    if (!entry) return false;
+    files[email][restoreTo] = entry;
+    delete files[email][trashKey];
+    setFiles(files);
+    addGlobalActivity(email, `Restored ${restoreTo} from trash`);
+    return true;
+  }
+
+  function emptyTrash(email){
+    const files = getFiles(); ensureUserFiles(email);
+    const keys = Object.keys(files[email]);
+    for (const k of keys){
+      if (k.startsWith('__trash__/')) delete files[email][k];
+    }
+    setFiles(files);
+    addGlobalActivity(email, 'Emptied trash');
+  }
+
+  async function downloadFile(email, path, versionId, decryptKey){
+    const files = getFiles();
+    if (!files[email] || !files[email][path]) throw new Error('File not found');
+    const entry = files[email][path];
+    const version = entry.versions.find(v => v.id === versionId) || entry.versions[0];
+    if (!version) throw new Error('Version not found');
+    const plain = await decryptData(decryptKey, version.content);
+    addGlobalActivity(email, `Downloaded ${path} (v:${version.id})`);
+    return { arrayBuffer: plain, metadata: entry.metadata, version };
+  }
+
+  function renameFile(email, path, newPath){
+    const files = getFiles(); ensureUserFiles(email);
+    const entry = files[email][path];
+    if (!entry) throw new Error('Not found');
+    entry.metadata.name = newPath.split('/').pop();
+    entry.metadata.modifiedAt = nowISO();
+    files[email][newPath] = entry;
+    delete files[email][path];
+    setFiles(files);
+    addGlobalActivity(email, `Renamed ${path} → ${newPath}`);
+    return true;
+  }
+
+  function setACL(email, path, targetUser, permission){
+    const files = getFiles(); ensureUserFiles(email);
+    const entry = files[email][path];
+    if (!entry) throw new Error('Not found');
+    entry.acl.permissions[targetUser] = permission;
+    entry.activity.unshift(`[${nowISO()}] ACL: ${targetUser} => ${permission}`);
+    setFiles(files);
+    addGlobalActivity(email, `Set ACL for ${path}: ${targetUser} -> ${permission}`);
+  }
+
+  // activity log
+  function addGlobalActivity(email, text){
+    const logs = load('cloud_activity_v1', []);
+    logs.unshift(`[${nowISO()}] (${email}) ${text}`);
+    save('cloud_activity_v1', logs.slice(0,200));
+  }
+  function getGlobalActivity(){ return load('cloud_activity_v1', []); }
+
+  // storage usage
+  function calcUsed(email){
+    const f = getUserFiles(email);
+    let sum = 0;
+    for (const k in f){
+      const e = f[k];
+      // skip trash or metadata markers
+      if (k.startsWith('__trash__/')) sum += e.metadata.size || 0;
+      else sum += e.metadata.size || 0;
+    }
+    return sum;
+  }
+
+  // upgrade plan (simulated payment)
+  function upgradePlan(email, planId){
+    const users = getUsers();
+    if (!users[email]) throw new Error('No user');
+    const plan = PLANS.find(p => p.id === planId);
+    if (!plan) throw new Error('No such plan');
+    users[email].planId = planId;
+    users[email].allocation = plan.storage;
+    setUsers(users);
+    addGlobalActivity(email, `Upgraded to ${plan.label} (${plan.storage} bytes)`);
+    // return billing info
+    return { success:true, charged: plan.priceZAR, currency: 'ZAR', plan };
+  }
+
+  // session timeout
+  let autoLogoutTimer = null;
+  function startAutoLogout(ms=1000*60*30){ // 30 mins default
+    if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+    autoLogoutTimer = setTimeout(() => {
+      const s = loadSession();
+      if (s){
+        logout();
+        render();
+        alert('Session timed out for security.');
+      }
+    }, ms);
+  }
+
+  // --- UI rendering & interactivity ---
+  const root = {
+    headerControls: document.getElementById('header-controls'),
+    sidebar: document.getElementById('sidebar'),
+    main: document.getElementById('mainContent'),
+    modalRoot: document.getElementById('modalRoot')
+  };
+
+  function clear(el){ el.innerHTML=''; }
+
+  // header buttons
+  function renderHeader(){
+    clear(root.headerControls);
+    const sess = loadSession();
+    if (sess){
+      const users = getUsers();
+      const u = users[sess.email];
+      const profileBtn = document.createElement('button');
+      profileBtn.className='btn';
+      profileBtn.textContent = `Profile (${u.name})`;
+      profileBtn.onclick = () => { showProfile(u.email) };
+
+      const logoutBtn = document.createElement('button');
+      logoutBtn.className='btn danger';
+      logoutBtn.textContent = 'Logout';
+      logoutBtn.onclick = () => {
+        logout(); render();
+      };
+
+      const activityBtn = document.createElement('button');
+      activityBtn.className='btn small-btn';
+      activityBtn.textContent = 'Activity';
+      activityBtn.onclick = () => { showActivity(); };
+
+      root.headerControls.appendChild(activityBtn);
+      root.headerControls.appendChild(profileBtn);
+      root.headerControls.appendChild(logoutBtn);
+    } else {
+      const login = document.createElement('button');
+      login.className='btn';
+      login.textContent='Login / Register';
+      login.onclick = () => { showAuth(); };
+      root.headerControls.appendChild(login);
+    }
+  }
+
+  function renderSidebar(){
+    clear(root.sidebar);
+    const sess = loadSession();
+    if (!sess){
+      root.sidebar.innerHTML = `<div class="muted">Please login or register to access the cloud storage features.</div>`;
+      return;
+    }
+    const users = getUsers();
+    const u = users[sess.email];
+    const profileDiv = document.createElement('div');
+    profileDiv.className='profile';
+    profileDiv.innerHTML = `
+      <div class="avatar">${(u.name||'U').slice(0,1).toUpperCase()}</div>
+      <div>
+        <div style="font-weight:800">${u.name}</div>
+        <div class="tiny muted">${u.email}</div>
+        <div class="tiny muted">Plan: ${u.planId}</div>
+      </div>
+    `;
+    root.sidebar.appendChild(profileDiv);
+
+    const storageCard = document.createElement('div');
+    storageCard.className='card';
+    const used = calcUsed(sess.email);
+    const alloc = u.allocation || DEFAULT_ALLOCATION;
+    const pct = Math.min(100, Math.round((used/alloc)*100));
+    storageCard.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>${bytesToHuman(used)}</strong> used</div>
+        <div class="small muted">${bytesToHuman(alloc)} total</div>
+      </div>
+      <div style="margin-top:8px" class="progress"><i style="width:${pct}%;"></i></div>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="btn small-btn" id="btnUpgrade">Upgrade Storage</button>
+        <button class="btn small-btn" id="btnTrash">Trash</button>
+      </div>
+    `;
+    root.sidebar.appendChild(storageCard);
+
+    // navigation
+    const navCard = document.createElement('div');
+    navCard.className='card';
+    navCard.innerHTML = `
+      <div class="nav-item active" id="navDashboard">Dashboard</div>
+      <div class="nav-item" id="navFiles">Files</div>
+      <div class="nav-item" id="navShare">Shared Links</div>
+      <div class="nav-item" id="navBilling">Billing</div>
+      <div class="nav-item" id="navSettings">Settings</div>
+    `;
+    root.sidebar.appendChild(navCard);
+
+    // attach nav handlers
+    setTimeout(()=>{
+      document.getElementById('btnUpgrade').onclick = () => showUpgrade();
+      document.getElementById('btnTrash').onclick = () => showTrash();
+      document.getElementById('navFiles').onclick = () => showFiles();
+      document.getElementById('navShare').onclick = () => showShared();
+      document.getElementById('navDashboard').onclick = () => showDashboard();
+      document.getElementById('navBilling').onclick = () => showBilling();
+      document.getElementById('navSettings').onclick = () => showSettings();
+    },50);
+  }
+
+  // --- Main views ---
+  function showAuth(){
+    clear(root.main);
+    const container = document.createElement('div');
+    container.innerHTML = `
+      <div style="display:flex;gap:20px;align-items:stretch">
+        <div style="flex:1" class="card">
+          <h3>Login</h3>
+          <div class="tiny muted">Use registered & verified account</div>
+          <label>Email</label><input type="email" id="loginEmail" />
+          <label>Password</label><input type="password" id="loginPassword" />
+          <div style="margin-top:10px"><button id="btnLogin" class="btn">Login</button> <button id="btnDemoLogin" class="btn small-btn">Demo user</button></div>
+          <div id="loginMsg" class="muted small" style="margin-top:8px"></div>
+        </div>
+
+        <div style="flex:1" class="card">
+          <h3>Register</h3>
+          <label>Full name</label><input type="text" id="regName" />
+          <label>Email</label><input type="email" id="regEmail" />
+          <label>Password</label><input type="password" id="regPassword" />
+          <div style="margin-top:10px"><button id="btnRegister" class="btn">Register</button></div>
+          <div id="regMsg" class="muted small" style="margin-top:8px"></div>
+        </div>
+      </div>
+    `;
+    root.main.appendChild(container);
+
+    document.getElementById('btnRegister').onclick = async () => {
+      const n = document.getElementById('regName').value.trim();
+      const e = document.getElementById('regEmail').value.trim().toLowerCase();
+      const p = document.getElementById('regPassword').value;
+      const msg = document.getElementById('regMsg');
+      msg.textContent = '';
+      try{
+        if (!n||!e||!p) throw new Error('Please fill all fields.');
+        await registerUser({name:n,email:e,password:p});
+        msg.innerHTML = `Registered! A verification code was "sent" to your email (console). <br>Enter the code below to verify: 
+          <div style="margin-top:8px"><input id="verifyCode" placeholder="verification code" /> <button id="btnVerify" class="btn small-btn">Verify</button></div>`;
+        document.getElementById('btnVerify').onclick = () => {
+          const code = document.getElementById('verifyCode').value.trim();
+          try{
+            const ok = verifyUser(e, code);
+            if (ok){ msg.textContent = 'Account verified — you may now login.'; }
+            else msg.textContent = 'Invalid code.';
+          } catch(err){ msg.textContent = err.message; }
+        };
+      } catch(err){ msg.textContent = err.message; }
+    };
+
+    document.getElementById('btnLogin').onclick = async () => {
+      const e = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const p = document.getElementById('loginPassword').value;
+      const msg = document.getElementById('loginMsg');
+      msg.textContent = '';
+      try{
+        if (!e||!p) throw new Error('Enter credentials');
+        await loginUser({email:e,password:p});
+        startAutoLogout(1000*60*20); // 20min for demo
+        render();
+      } catch(err){ msg.textContent = err.message; }
+    };
+
+    document.getElementById('btnDemoLogin').onclick = async () => {
+      // create demo user if missing
+      const demoEmail = 'demo@cloud.local';
+      const users = getUsers();
+      if (!users[demoEmail]) {
+        users[demoEmail] = { name:'Demo User', email:demoEmail, verified:true, allocation:DEFAULT_ALLOCATION, planId:'free', createdAt:nowISO(), role:'user' };
+        setUsers(users);
+      }
+      await loginUser({email:demoEmail, password:'demopassword'});
+      render();
+    };
+  }
+
+  function showDashboard(){
+    clear(root.main);
+    const sess = loadSession();
+    if (!sess) return showAuth();
+    const users = getUsers(); const u = users[sess.email];
+    const used = calcUsed(sess.email);
+    const files = getUserFiles(sess.email);
+    const fileCount = Object.keys(files).filter(k=>!k.startsWith('__trash__/')).length;
+
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div class="top-row">
+        <div>
+          <h2>Welcome back, ${u.name}</h2>
+          <div class="tiny muted">Manage your cloud files securely</div>
+        </div>
+        <div>
+          <button class="btn" id="btnUploadNow">Upload File</button>
+          <button class="btn small-btn" id="btnNewFolder">New Folder</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+        <div class="card">
+          <h3>Quick Upload</h3>
+          <div class="upload-area" id="uploadArea">
+            <div class="muted">Drag & drop files here or <label class="link" style="display:inline"><input id="fileInput" type="file" multiple /> browse</label></div>
+            <div class="tiny muted" style="margin-top:8px">Files will be encrypted client-side and stored locally (demo).</div>
+            <div class="files-list" id="uploadQueue"></div>
+          </div>
+
+          <div style="margin-top:14px">
+            <h4>Recent activity</h4>
+            <div class="log" id="recentActivity"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Storage & Plan</h3>
+          <div style="margin-bottom:8px">
+            <div><strong>${bytesToHuman(used)}</strong> used of <strong>${bytesToHuman(u.allocation)}</strong></div>
+            <div class="tiny muted" id="planLabel">Plan: ${u.planId} — ${PLANS.find(p=>p.id===u.planId).label}</div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn" id="btnManageFiles">Open Files Manager</button>
+            <button class="btn small-btn" id="btnUpgrade2">Upgrade</button>
+          </div>
+
+          <div style="margin-top:14px">
+            <h4>Account</h4>
+            <div class="muted small">Member since ${new Date(u.createdAt).toLocaleDateString()}</div>
+            <div style="margin-top:8px"><button class="btn small-btn" id="btnProfile2">Profile</button></div>
+          </div>
+        </div>
+      </div>
+    `;
+    root.main.appendChild(el);
+
+    // upload handlers
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadQueue = document.getElementById('uploadQueue');
+    const recentActivity = document.getElementById('recentActivity');
+
+    function renderRecent(){
+      recentActivity.innerHTML = getGlobalActivity().slice(0,30).map(l=>`<div>${l}</div>`).join('');
+    }
+    renderRecent();
+
+    uploadArea.ondragover = (e)=>{ e.preventDefault(); uploadArea.classList.add('dragover'); }
+    uploadArea.ondragleave = ()=> uploadArea.classList.remove('dragover');
+    uploadArea.ondrop = async (e) => {
+      e.preventDefault(); uploadArea.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files || []);
+      await processFiles(files, '/');
+      renderRecent();
+    };
+    fileInput.onchange = async (e) => {
+      const files = Array.from(e.target.files || []);
+      await processFiles(files, '/');
+      fileInput.value='';
+      renderRecent();
+    };
+
+    async function processFiles(filesArr, folder){
+      const sess = loadSession(); if (!sess) return;
+      const users = getUsers();
+      const u = users[sess.email];
+      for (const f of filesArr){
+        const p = `${folder}${f.name}`;
+        // check storage
+        const used = calcUsed(sess.email);
+        if (used + f.size > u.allocation){
+          alert(`Not enough storage for ${f.name}. Please upgrade your plan.`);
+          continue;
+        }
+        // progress UI
+        const row = document.createElement('div');
+        row.className='file-item';
+        row.innerHTML = `<div class="file-meta"><div><strong>${f.name}</strong><div class="tiny muted">${f.type || 'file'} • ${bytesToHuman(f.size)}</div></div></div><div class="badge tiny">Encrypting...</div>`;
+        uploadQueue.appendChild(row);
+
+        try{
+          await uploadFile(sess.email, p, f, window.__sessionKey);
+          row.querySelector('.badge').textContent = 'Done';
+        } catch(err){
+          row.querySelector('.badge').textContent = 'Error';
+          console.error(err);
+        }
+      }
+      setTimeout(()=>uploadQueue.innerHTML='', 1200);
+    }
+
+    document.getElementById('btnUploadNow').onclick = () => fileInput.click();
+    document.getElementById('btnNewFolder').onclick = () => {
+      const name = prompt('New folder name');
+      if (!name) return;
+      // create a placeholder file entry with metadata to represent folder
+      const sess = loadSession(); const files = getFiles(); ensureUserFiles(sess.email);
+      const path = `/${name}/`;
+      const filesFor = files[sess.email];
+      if (filesFor[path]) return alert('Folder exists');
+      filesFor[path] = { versions:[], metadata:{name, type:'folder', size:0, createdAt:nowISO(), path}, acl:{owner:sess.email, permissions:{[sess.email]:'owner'}}, activity:[] };
+      setFiles(files);
+      addGlobalActivity(sess.email, `Created folder ${path}`);
+      render();
+    };
+
+    document.getElementById('btnManageFiles').onclick = () => showFiles();
+    document.getElementById('btnUpgrade2').onclick = () => showUpgrade();
+    document.getElementById('btnProfile2').onclick = () => showProfile(sess.email);
+  }
+
+  function showFiles(){
+    clear(root.main);
+    const sess = loadSession(); if (!sess) return showAuth();
+    const files = getUserFiles(sess.email);
+    const visible = Object.keys(files).filter(k=>!k.startsWith('__trash__/')).sort();
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="top-row"><h2>Files</h2><div><button class="btn" id="btnUpload">Upload</button></div></div>
+      <div class="card" id="filesCard"></div>
+    `;
+    root.main.appendChild(el);
+    document.getElementById('btnUpload').onclick = () => {
+      // simulate click to upload from dashboard
+      const input = document.createElement('input');
+      input.type='file'; input.multiple=true;
+      input.onchange = async (e) => {
+        const list = Array.from(e.target.files||[]);
+        await (async ()=>{ for (const f of list) await uploadFile(sess.email, '/'+f.name, f, window.__sessionKey) })();
+        render();
+      };
+      input.click();
+    };
+
+    const filesCard = document.getElementById('filesCard');
+    if (visible.length===0) filesCard.innerHTML = `<div class="muted">No files yet. Upload some files or create folders.</div>`;
+    else {
+      filesCard.innerHTML = visible.map(k=>{
+        const e = files[k];
+        const v = e.versions[0];
+        return `<div class="file-item" data-path="${k}">
+          <div class="file-meta">
+            <div>
+              <div style="font-weight:800">${e.metadata.name}</div>
+              <div class="tiny muted">${e.metadata.type} • ${bytesToHuman(e.metadata.size || 0)} • ${new Date(e.metadata.modifiedAt||e.metadata.createdAt).toLocaleString()}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn small-btn" data-action="download">Download</button>
+            <button class="btn small-btn" data-action="rename">Rename</button>
+            <button class="btn small-btn" data-action="share">Share</button>
+            <button class="btn small-btn danger" data-action="delete">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+      // attach handlers
+      filesCard.querySelectorAll('.file-item').forEach(node=>{
+        const path = node.dataset.path;
+        node.querySelector('[data-action="download"]').onclick = async () => {
+          try{
+            const data = await downloadFile(sess.email, path, null, window.__sessionKey);
+            // create blob, download
+            const blob = new Blob([data.arrayBuffer], {type: data.metadata.type || 'application/octet-stream'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = data.version.name || data.metadata.name;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            alert('Download initiated (decrypted on the fly).');
+            render();
+          } catch(err){ alert('Download failed: '+err.message) }
+        };
+        node.querySelector('[data-action="rename"]').onclick = async () => {
+          const newName = prompt('New file name', path.split('/').pop());
+          if (!newName) return;
+          const newPath = '/' + newName;
+          renameFile(sess.email, path, newPath);
+          render();
+        };
+        node.querySelector('[data-action="share"]').onclick = async () => {
+          const token = Math.random().toString(36).slice(2);
+          const filesStore = getFiles();
+          filesStore[sess.email][path].shareToken = token;
+          filesStore[sess.email][path].activity.unshift(`[${nowISO()}] Shared token ${token}`);
+          setFiles(filesStore);
+          const link = `${location.origin}${location.pathname}#shared:${sess.email}:${encodeURIComponent(path)}:${token}`;
+          prompt('Shareable link (demo):', link);
+        };
+        node.querySelector('[data-action="delete"]').onclick = () => {
+          if (confirm('Send to trash?')){ deleteFile(sess.email, path); render(); }
+        };
+      });
+    }
+  }
+
+  function showTrash(){
+    clear(root.main);
+    const sess = loadSession(); if (!sess) return showAuth();
+    const files = getUserFiles(sess.email);
+    const trashed = Object.keys(files).filter(k=>k.startsWith('__trash__/'));
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="top-row"><h2>Trash</h2><div><button class="btn danger" id="btnEmpty">Empty Trash</button></div></div>
+      <div class="card" id="trashCard"></div>`;
+    root.main.appendChild(el);
+    const trashCard = document.getElementById('trashCard');
+    if (trashed.length===0) trashCard.innerHTML = `<div class="trash-empty">Trash is empty</div>`;
+    else {
+      trashCard.innerHTML = trashed.map(k=>{
+        const e = files[k];
+        return `<div class="file-item" data-key="${k}">
+          <div><div style="font-weight:800">${e.metadata.name}</div><div class="tiny muted">Trashed at ${new Date(e.trashedAt||e.metadata.modifiedAt||e.metadata.createdAt).toLocaleString()}</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn small-btn" data-action="restore">Restore</button>
+            <button class="btn small-btn danger" data-action="permadelete">Delete Permanently</button>
+          </div>
+        </div>`;
+      }).join('');
+      trashCard.querySelectorAll('.file-item').forEach(node=>{
+        const key = node.dataset.key;
+        node.querySelector('[data-action="restore"]').onclick = () => {
+          const orig = files[key].originalPath || ('/' + files[key].metadata.name);
+          restoreFromTrash(sess.email, key, orig);
+          render();
+        };
+        node.querySelector('[data-action="permadelete"]').onclick = () => {
+          if (!confirm('Delete permanently?')) return;
+          const f = getFiles(); delete f[sess.email][key]; setFiles(f);
+          addGlobalActivity(sess.email, `Permanently deleted ${key}`);
+          render();
+        };
+      });
+    }
+    document.getElementById('btnEmpty').onclick = () => {
+      if (confirm('Empty trash permanently?')){ emptyTrash(sess.email); render(); }
+    };
+  }
+
+  function showShared(){
+    clear(root.main);
+    const sess = loadSession(); if (!sess) return showAuth();
+    const files = getUserFiles(sess.email);
+    // find share tokens
+    const shared = Object.keys(files).filter(k=>files[k].shareToken);
+    const el = document.createElement('div');
+    el.innerHTML = `<h2>Shared Links</h2><div class="card" id="sharedCard"></div>`;
+    root.main.appendChild(el);
+    const sharedCard = document.getElementById('sharedCard');
+    if (shared.length===0) sharedCard.innerHTML = `<div class="muted">No shared links found</div>`;
+    else {
+      sharedCard.innerHTML = shared.map(k=>{
+        const t = files[k].shareToken;
+        return `<div class="file-item">
+          <div><strong>${files[k].metadata.name}</strong><div class="tiny muted">${k}</div></div>
+          <div><button class="btn small-btn" data-token="${t}" data-path="${k}">Copy Link</button></div>
+        </div>`;
+      }).join('');
+      sharedCard.querySelectorAll('button').forEach(b=>{
+        b.onclick = () => {
+          const token = b.dataset.token;
+          const path = b.dataset.path;
+          const link = `${location.origin}${location.pathname}#shared:${sess.email}:${encodeURIComponent(path)}:${token}`;
+          navigator.clipboard?.writeText(link).then(()=> alert('Link copied to clipboard (demo)'));
+        };
+      });
+    }
+  }
+
+  function showBilling(){
+    clear(root.main);
+    const sess = loadSession(); if (!sess) return showAuth();
+    const users = getUsers(); const u = users[sess.email];
+    const el = document.createElement('div');
+    el.innerHTML = `<h2>Billing & Subscription</h2><div class="card">
+      <div><strong>Current plan:</strong> ${u.planId} — ${PLANS.find(p=>p.id===u.planId).label}</div>
+      <div class="tiny muted" style="margin-top:8px">Upgrade to increase storage. Payments simulated in ZAR.</div>
+
+      <div style="margin-top:12px">
+        ${PLANS.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:8px">
+          <div><strong>${p.label}</strong><div class="tiny muted">${bytesToHuman(p.storage)}</div></div>
+          <div>${p.priceZAR===0?'<span class="pill">Free</span>':`<strong>R ${p.priceZAR}</strong> <button class="btn small-btn" data-plan="${p.id}">Buy</button>`}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+    root.main.appendChild(el);
+    root.main.querySelectorAll('[data-plan]').forEach(b=>{
+      b.onclick = async () => {
+        const planId = b.dataset.plan;
+        if (!confirm(`Simulate payment of R ${PLANS.find(p=>p.id===planId).priceZAR} for plan ${planId}?`)) return;
+        const res = upgradePlan(sess.email, planId);
+        alert(`Charged R ${res.charged} (simulated). Plan updated.`);
+        render();
+      };
+    });
+  }
+
+  function showSettings(){
+    clear(root.main);
+    const sess = loadSession(); if (!sess) return showAuth();
+    const users = getUsers(); const u = users[sess.email];
+    const el = document.createElement('div');
+    el.innerHTML = `<h2>Settings</h2>
+      <div class="card">
+        <label>Display name</label><input id="settingsName" value="${u.name}" />
+        <label>Role</label>
+        <select id="settingsRole"><option value="user">User</option><option value="admin">Admin</option></select>
+        <div style="margin-top:8px"><button class="btn" id="btnSaveSettings">Save</button></div>
+      </div>`;
+    root.main.appendChild(el);
+    document.getElementById('settingsRole').value = u.role;
+    document.getElementById('btnSaveSettings').onclick = () => {
+      const name = document.getElementById('settingsName').value.trim();
+      const role = document.getElementById('settingsRole').value;
+      const users = getUsers(); users[sess.email].name = name; users[sess.email].role = role; setUsers(users);
+      alert('Saved settings');
+      render();
+    };
+  }
+
+  function showProfile(email){
+    clear(root.main);
+    const users = getUsers();
+    const u = users[email];
+    const el = document.createElement('div');
+    el.innerHTML = `<h2>Profile</h2>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:800">${u.name}</div>
+            <div class="tiny muted">${u.email}</div>
+            <div class="tiny muted">Plan: ${u.planId}</div>
+          </div>
+          <div>
+            <button class="btn" id="btnChangePass">Change Password (demo)</button>
+            <button class="btn small-btn" id="btnBilling">Upgrade</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h4>Security</h4>
+          <div class="tiny muted">2FA & session management simulated. Session tokens are cleared on logout.</div>
+          <div style="margin-top:8px"><button class="btn small-btn" id="btnEndSessions">End all sessions</button></div>
+        </div>
+      </div>`;
+    root.main.appendChild(el);
+    document.getElementById('btnBilling').onclick = () => showBilling();
+    document.getElementById('btnChangePass').onclick = () => alert('Password change simulated in this demo (no actual password stored).');
+    document.getElementById('btnEndSessions').onclick = () => {
+      // in demo, only current session exists
+      logout();
+      alert('All sessions ended. You will be returned to login.');
+      render();
+    };
+  }
+
+  function showUpgrade(){
+    const sess = loadSession(); if (!sess) return showAuth();
+    const users = getUsers(); const u = users[sess.email];
+    const box = document.createElement('div');
+    box.className='modal';
+    box.innerHTML = `<div class="box">
+      <h3>Upgrade storage</h3>
+      <div class="tiny muted">Select a plan and simulate payment. Prices are in R (Rand).</div>
+      <div style="margin-top:12px">
+        ${PLANS.filter(p=>p.id!=='free').map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.01)">
+          <div><strong>${p.label}</strong><div class="tiny muted">${bytesToHuman(p.storage)}</div></div>
+          <div><strong>R ${p.priceZAR}</strong> <button class="btn small-btn buy" data-plan="${p.id}">Buy</button></div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button id="btnCloseModal" class="btn">Close</button>
+      </div>
+    </div>`;
+    box.onclick = (e)=>{ if (e.target === box) box.remove(); };
+    root.modalRoot.innerHTML=''; root.modalRoot.appendChild(box); root.modalRoot.className='';
+    root.modalRoot.querySelectorAll('.buy').forEach(b=>{
+      b.onclick = async () => {
+        const planId = b.dataset.plan;
+        if (!confirm(`Simulate charge of R ${PLANS.find(p=>p.id===planId).priceZAR}?`)) return;
+        const res = upgradePlan(sess.email, planId);
+        alert(`Charged R ${res.charged} (simulated). Plan updated.`);
+        root.modalRoot.innerHTML=''; root.modalRoot.className='hidden';
+        render();
+      };
+    });
+    document.getElementById('btnCloseModal').onclick = () => { root.modalRoot.innerHTML=''; root.modalRoot.className='hidden'; };
+  }
+
+  function showActivity(){
+    clear(root.main);
+    const logs = getGlobalActivity();
+    const el = document.createElement('div');
+    el.innerHTML = `<h2>Activity Log</h2><div class="card"><div class="log">${logs.join('<br/>')}</div></div>`;
+    root.main.appendChild(el);
+  }
+
+  // initial render entrypoint
+  function render(){
+    renderHeader();
+    renderSidebar();
+    const sess = loadSession();
+    if (!sess) showAuth();
+    else showDashboard();
+  }
+
+  // handle shared-link hash: #shared:email:path:token
+  function handleHash(){
+    const h = location.hash || '';
+    if (h.startsWith('#shared:')){
+      const parts = h.slice(8).split(':');
+      if (parts.length>=3){
+        const owner = parts[0];
+        const path = decodeURIComponent(parts[1]);
+        const token = parts[2];
+        const files = getFiles();
+        if (files[owner] && files[owner][path] && files[owner][path].shareToken === token){
+          // show simple viewer / download prompt
+          const content = files[owner][path].versions[0];
+          const info = `Shared file: ${files[owner][path].metadata.name} — ${bytesToHuman(files[owner][path].metadata.size||0)}\nClick OK to download (demo, decrypted not possible without password)`;
+          if (confirm(info)) alert('To download decrypted content you must be the owner and logged in. Please login to access.');
+        } else alert('Invalid or expired share link (demo).');
+      }
+      location.hash='';
+    }
+  }
+
+  // initial setup
+  window.addEventListener('hashchange', handleHash);
+  handleHash();
+
+  return { render, init:render, helpers:{getUsers,getFiles,getUserFiles,bytesToHuman,PLANS} };
+})();
+
+APP.init();
+</script>

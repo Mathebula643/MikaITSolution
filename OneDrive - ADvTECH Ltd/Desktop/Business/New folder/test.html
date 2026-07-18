@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="mystyle.css">
+    <title>MIKA IT Solution</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background: #ADD8E6; /* Light blue background for a clean look */
+        }
+
+        header.hero {
+            background: linear-gradient(135deg, #0056b3, #007bff); /* Vibrant blue gradient */
+            color: #fff;
+            text-align: center;
+            padding: 60px 20px;
+            border-bottom: 5px solid #ffd700; /* Golden accent */
+        }
+
+        header.hero h1 span {
+            color: #ffd700; /* Highlight in gold */
+        }
+
+        header.hero .btn {
+            background: #ffd700;
+            color: #0056b3;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 15px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        header.hero .btn:hover {
+            background: #fff;
+            color: #0056b3;
+            transform: scale(1.1);
+        }
+
+        nav {
+    background: #333;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* Allows wrapping of items when space is insufficient */
+    padding: 10px 0;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 5px; /* Reduce margin for better spacing on small screens */
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 15px;
+    transition: background 0.3s ease, color 0.3s ease;
+    border-radius: 5px;
+    flex: 1; /* Let items grow/shrink equally */
+    text-align: center; /* Center-align text in smaller screen sizes */
+    max-width: 150px; /* Prevent buttons from becoming too wide */
+}
+
+nav a:hover {
+    background: #ffd700;
+    color: #333;
+}
+
+/* Media Query for Small Screens */
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column; /* Stack items vertically on smaller screens */
+    }
+
+    nav a {
+        margin: 5px 0; /* Adjust spacing for vertical layout */
+        max-width: 100%; /* Allow links to take full width if needed */
+    }
+}
+
+
+        section {
+            padding: 60px 20px;
+            display: none; /* Initially hide all sections */
+        }
+
+        section.active {
+            display: block; /* Show only the active section */
+        }
+
+        h2 {
+            color: #0056b3;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        h2::after {
+            content: "";
+            width: 50px;
+            height: 4px;
+            background: #ffd700;
+            display: block;
+            margin: 10px auto;
+        }
+
+        h3 {
+            color: #FFFFFF;
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+		h3::after {
+            content: "";
+            width: 100px;
+            height: 6px;
+            background: #654321;
+            display: block;
+            margin: 0px auto;
+        }
+		
+        ul {
+            list-style-type: disc; /* Default bullet style */
+            padding-left: 40px; /* Indentation for bullets */
+            margin: 20px 0; /* Spacing above and below the list */
+            text-align: center; /* Align text to the center */
+        }
+
+        ul li {
+            display: block; /* Ensure items stack vertically */
+            margin-bottom: 10px; /* Add space between list items */
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+            text-align: center;
+        }
+
+        form {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        form input, form textarea, form select, form button {
+            display: block;
+            width: calc(100% - 20px);
+            margin: 10px auto;
+            padding: 12px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        form input:focus, form textarea:focus, form select:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0px 0px 5px rgba(0, 86, 179, 0.5);
+        }
+
+        form button {
+            background: #0056b3;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s ease;
+        }
+
+        form button:hover {
+            background: #003d80;
+        }
+
+        footer {
+            background: #333;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            border-top: 5px solid #ffd700;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        footer p {
+            margin: 0;
+        }
+		
+		a {
+   color: green;
+}
+
+/* visited link */
+a:visited {
+  color: red;
+}
+
+/* mouse over link */
+a:hover {
+  color: hotpink;
+}
+
+/* selected link */
+a:active {
+  color: green;
+}
+
+.fa {
+  padding: 20px;
+  font-size: 50px;
+  width: 60px;
+  text-align: center;
+  text-decoration: none;
+  margin: 7px 4px;
+}
+
+.fa:hover {
+    opacity: 0.9;
+}
+
+.fa-facebook {
+  background: #3B5998;
+  color: white;
+}
+
+.fa-google {
+  background: #dd4b39;
+  color: white;
+}
+		
+    </style>
+</head>
+<body>
+    <!-- Navigation Menu -->
+    <nav>
+        <a onclick="showPage('home')">Home</a>
+        <a onclick="showPage('about')">About Us</a>
+        <a onclick="showPage('services')">Services</a>
+		<a onclick="showPage('booking')">Booking</a>
+        <a onclick="showPage('contact')">Contact</a>
+    </nav>
+
+    <!-- Pages -->
+    <section id="home" class="active">
+        <header class="hero">
+            <div class="container">
+                <h1>&#128205; Welcome to <span>MIKA IT Solution</span>! &#128205;</h1>
+				<span style='font-size:100px;'>&#128187;</span>
+                <p>Your go-to partner for professional IT solutions tailored to your needs.</p>
+                <a onclick="showPage('booking')" class="btn">Book an Appointment</a>
+            </div>
+        </header>
+    </section>
+
+    <section id="about">
+        <div class="container">
+            <h2>About Us</h2>
+            <h3><strong>Who We Are:</strong></h3>  
+			<p>MIKA IT Solution is your trusted partner for reliable, innovative, and creative IT services. 
+			<br>From resolving technical issues to designing professional business cards, we are committed <br>to delivering excellence in every project we undertake.
+            We specialize in offering services that blend <br> technical expertise with creative design, ensuring our clients stand out in a competitive digital landscape.</p>
+            
+			<br>
+			<h3><strong>Our Mission:</strong> </h3>
+			<p>To provide reliable, efficient, and creative IT solutions that make a difference.</p>
+            
+			<br>
+			<h3><strong>Why Choose Us?</strong></h3>
+            <ul>
+                <li>&#128204; Personalized Service</li>
+                <li>&#128204; Expertise in IT and Design</li>
+                <li>&#128204; Affordable Pricing</li>
+            </ul>
+			
+			<br>
+			<h3><strong>Industries We Serve</strong></h3>
+			<ul>
+	 	        <li>&#128204; Small businesses and startups</li>
+                <li>&#128204; Event planning and management companies</li>
+                <li>&#128204; Educational institutions</li>
+				<li>&#128204; Non-profits and community organizations</li>
+			</ul>
+			
+			<br>
+			<h3><strong>Our Commitment to Quality</strong></h3>
+            <p>At MIKA IT Solution, we believe in building long-term relationships with our clients. <br>We go above and beyond to ensure satisfaction, 
+			   working closely with you to bring your vision to life.</p>
+			   <br><br><br>
+        </div>
+    </section>
+
+    <section id="services">
+        <div class="container">
+            <h2>Our Services</h2>
+            <ul>
+                <li>&#128204; Technical Troubleshooting &#128204;</li>
+                <li>&#128204; Graphic Design (Posters, Flyers, Business Cards) &#128204;</li>
+                <li>&#128204; Website Development and Hosting &#128204;</li>
+                <li>&#128204; Business Plan Development &#128204;</li>
+                <li>&#128204; Event Program (Weddings, Parties, and More) &#128204;</li>
+                <li>&#128204; Online Presentations &#128204;</li>
+                <li>&#128204; Other &#128204;</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <h2>Contact Us</h2>
+			
+			<!-- Add font awesome icons -->
+<center><a href="https://www.facebook.com/jahara.edwin" class="fa fa-facebook"></a>
+<a href="mailto:mathebulatiyi5@gmail.com?subject=Your%20Subject&body=Your%20message%20here" class="fa fa-google"></a>
+<a href="https://www.instagram.com/jaha_ra_edwin/?__coig_restricted=1" class="fa fa-instagram"></center></a>
+
+	<script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+	<script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+			
+			<p><strong><center>whatsapp number <a href="https://wa.me/27769437611" target="_blank"><ion-icon name="logo-whatsapp"></ion-icon> <center></a>[076 943 7611]</strong></p>
+			<p><strong><center>Call Us  <a href="tel:+27769437611"><ion-icon name="call-outline"></ion-icon></ion-icon> <center></a>[076 943 7611]</strong></p>
+			<p><strong><center>Our other number for calls <a href="tel:+27639860081"><ion-icon name="call-outline"></ion-icon></ion-icon> <center></a>[063 986 0081]</strong></p>
+            <p><strong>Facebook:</strong> Jaha Ra Edwin </p>
+        </div>
+    </section>
+
+    <section id="booking">
+        <div class="container">
+        <h2>Book an Appointment</h2>
+            <form id="appointment-form">
+                <input type="text" id="name" placeholder="Your Name" required>
+                <input type="email" id="email" placeholder="Your Email" required>
+                <input type="date" id="date" required>
+                <select id="service" required>
+                    <option value="" disabled selected>Select a Service</option>
+                    <option value="Technical Troubleshooting">Technical Troubleshooting</option>
+                    <option value="Graphic Design">Graphic Design</option>
+                    <option value="Website Development">Website Development</option>
+                    <option value="Business Plan Development">Business Plan Development</option>
+                    <option value="Event Program">Event Program</option>
+                    <option value="Online Presentations">Online Presentations</option>
+                    <option value="Other">Other</option>
+                </select>
+                <textarea id="message" placeholder="Additional Message (Optional)"></textarea>
+				<input type="reset"value="Reset">
+                <button type="submit">Submit Booking</button>
+            </form>
+	    </div>
+		<br><br><br>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 MIKA IT Solution. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Page Navigation
+        function showPage(pageId) {
+            const sections = document.querySelectorAll('section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+                if (section.id === pageId) {
+                    section.classList.add('active');
+                }
+            });
+        }
+
+        // Booking Form Submission
+        document.getElementById('appointment-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const date = document.getElementById('date').value;
+            const service = document.getElementById('service').value;
+            const message = document.getElementById('message').value;
+
+            const subject = encodeURIComponent("Booking Appointment Request");
+            const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nDate: ${date}\nService: ${service}\nMessage: ${message}`);
+            window.location.href = `mailto:mathebulatiyi5@gmail.com?subject=${subject}&body=${body}`;
+        });
+    </script>
+</body>
+</html>

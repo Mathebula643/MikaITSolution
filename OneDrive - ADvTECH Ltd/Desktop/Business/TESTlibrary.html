@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Library</title>
+  <style>
+    body {font-family: Arial, sans-serif;margin: 0;padding: 0;background: #f4f4f4;}
+    header {background: #2c3e50;color: white;padding: 20px;text-align: center;}
+    nav {display: flex;justify-content: center;gap: 20px;background: #34495e;padding: 10px;flex-wrap: wrap;}
+    nav button {background: #1abc9c;color: white;border: none;padding: 10px 20px;cursor: pointer;border-radius: 5px;}
+    nav button:hover {background: #16a085;}
+    .search-bar {text-align: center;margin: 20px;}
+    .search-bar input {width: 60%;padding: 10px;border-radius: 5px;border: 1px solid #ccc;}
+    .library {display: grid;grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));gap: 20px;padding: 20px;}
+    .book {background: white;border-radius: 8px;padding: 15px;box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+    .book img {max-width: 100%;border-radius: 5px;}
+    .book h3 {margin: 10px 0 5px;}
+    .book p {font-size: 14px;color: #555;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 Online Library</h1>
+    <p>Explore NCV and general categories of books</p>
+  </header>
+
+  <nav>
+    <button onclick="showCategory('it')">Information Technology</button>
+    <button onclick="showCategory('business')">Business Studies</button>
+    <button onclick="showCategory('engineering')">Engineering</button>
+    <button onclick="showCategory('literature')">Literature</button>
+    <button onclick="showCategory('all')">All Books</button>
+  </nav>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search for books by title, author, or description..." onkeyup="searchBooks()">
+  </div>
+
+  <section id="library" class="library"></section>
+
+  <script>
+    const books = [
+      {id:1,category:'it',title:'Introduction to Information Systems',author:'James A. O’Brien',cover:'https://covers.openlibrary.org/b/id/10594764-L.jpg',desc:'A fundamental NCV IT textbook covering system concepts, data management, and information systems applications.',link:'https://openlibrary.org/books/OL25435167M'},
+      {id:2,category:'it',title:'Computer Networking Basics',author:'Charles Severance',cover:'https://covers.openlibrary.org/b/id/8099256-L.jpg',desc:'Explains the basics of networking, protocols, and internet infrastructure for beginners.',link:'https://openlibrary.org/books/OL25435168M'},
+      {id:3,category:'business',title:'Principles of Business Management',author:'J. Louw & Venter',cover:'https://covers.openlibrary.org/b/id/8231993-L.jpg',desc:'Covers essential business functions like planning, organizing, leadership, and control.',link:'https://openlibrary.org/books/OL25435169M'},
+      {id:4,category:'business',title:'Marketing for Entrepreneurs',author:'Philip Kotler',cover:'https://covers.openlibrary.org/b/id/240726-L.jpg',desc:'Focuses on practical marketing approaches for small businesses and startups.',link:'https://openlibrary.org/books/OL25435170M'},
+      {id:5,category:'engineering',title:'Basic Electrical Engineering',author:'V.K. Mehta',cover:'https://covers.openlibrary.org/b/id/8235114-L.jpg',desc:'Introduces electrical concepts, circuits, and devices for engineering students.',link:'https://openlibrary.org/books/OL25435171M'},
+      {id:6,category:'engineering',title:'Mechanical Engineering Basics',author:'R.K. Rajput',cover:'https://covers.openlibrary.org/b/id/8232001-L.jpg',desc:'Explores thermodynamics, mechanics, and material science with practical applications.',link:'https://openlibrary.org/books/OL25435172M'},
+      {id:7,category:'literature',title:'Romeo and Juliet',author:'William Shakespeare',cover:'https://covers.openlibrary.org/b/id/8228691-L.jpg',desc:'Classic tragic love story between Romeo Montague and Juliet Capulet.',link:'https://openlibrary.org/works/OL362427W'},
+      {id:8,category:'literature',title:'Things Fall Apart',author:'Chinua Achebe',cover:'https://covers.openlibrary.org/b/id/10832887-L.jpg',desc:'A story of Nigerian village life and the clash between tradition and colonialism.',link:'https://openlibrary.org/works/OL82563W'}
+    ];
+
+    function renderBooks(list){
+      const library = document.getElementById('library');
+      library.innerHTML = '';
+      if(list.length === 0){
+        library.innerHTML = '<p>No books found.</p>';
+        return;
+      }
+      list.forEach(book => {
+        const div = document.createElement('div');
+        div.className = 'book';
+        div.innerHTML = `
+          <img src="${book.cover}" alt="${book.title}">
+          <h3>${book.title}</h3>
+          <p><b>Author:</b> ${book.author}</p>
+          <p>${book.desc}</p>
+          <a href="${book.link}" target="_blank">Read More</a>
+        `;
+        library.appendChild(div);
+      });
+    }
+
+    function showCategory(cat){
+      if(cat === 'all'){
+        renderBooks(books);
+      } else {
+        renderBooks(books.filter(b => b.category === cat));
+      }
+    }
+
+    function searchBooks(){
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const results = books.filter(book => 
+        book.title.toLowerCase().includes(query) ||
+        book.author.toLowerCase().includes(query) ||
+        book.desc.toLowerCase().includes(query)
+      );
+      renderBooks(results);
+    }
+
+    // Default view
+    showCategory('it');
+  </script>
+</body>
+</html>

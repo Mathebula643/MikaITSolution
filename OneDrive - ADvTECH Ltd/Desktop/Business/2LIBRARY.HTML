@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Online Library — NCV</title>
+  <style>
+    :root{--accent:#1d4ed8;--muted:#6b7280;--bg:#f8fafc}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:var(--bg); color:#0f172a}
+    header{background:white; padding:18px 24px; display:flex; gap:18px; align-items:center; border-bottom:1px solid #e6edf3}
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),#60a5fa); border-radius:8px; display:grid; place-items:center; color:white; font-weight:700}
+    h1{font-size:18px;margin:0}
+    .searchbar{margin-left:auto; display:flex; gap:8px; align-items:center}
+    input[type=text]{padding:10px 12px; border-radius:8px; border:1px solid #d1d5db; min-width:260px}
+    select, button{padding:10px 12px; border-radius:8px; border:1px solid #d1d5db; background:white}
+    main{padding:24px; max-width:1200px; margin:0 auto}
+    .grid{display:grid; grid-template-columns: 220px 1fr; gap:20px}
+    nav.aside{background:white; padding:16px; border-radius:10px; border:1px solid #e6edf3}
+    nav.aside h3{margin:0 0 12px 0}
+    .categories{display:flex; flex-direction:column; gap:8px}
+    .category{padding:8px 10px; border-radius:8px; cursor:pointer}
+    .category.active{background:linear-gradient(90deg,#eef2ff,#e0f2fe); border:1px solid #c7ddff}
+    .content{display:flex; flex-direction:column; gap:16px}
+    .toolbar{display:flex; gap:12px; align-items:center}
+    .cards{display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:16px}
+    .card{background:white; padding:12px; border-radius:10px; border:1px solid #e6edf3; display:flex; flex-direction:column; gap:8px}
+    .cover{width:100%; height:260px; border-radius:8px; object-fit:cover; background:#f1f5f9}
+    .meta{display:flex; justify-content:space-between; align-items:center}
+    .btn{cursor:pointer}
+    .small{font-size:13px;color:var(--muted)}
+    footer{padding:18px; text-align:center; color:var(--muted)}
+    /* modal */
+    .modal{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,7,18,0.5); z-index:60}
+    .modal.open{display:flex}
+    .modal-card{width:94%; max-width:900px; background:white; border-radius:10px; overflow:hidden}
+    .modal-body{display:flex; gap:12px}
+    .reader{flex:1; min-height:60vh; background:#0f172a; color:white; display:grid; place-items:center}
+    .details{width:360px; padding:16px}
+    form.row{display:flex; gap:8px; flex-wrap:wrap}
+    form input, form textarea{width:100%; padding:8px; border:1px solid #d1d5db; border-radius:8px}
+    .chip{display:inline-flex; gap:8px; align-items:center; padding:6px 8px; border-radius:999px; border:1px solid #e6edf3}
+    @media (max-width:900px){.modal-body{flex-direction:column}.reader{height:50vh}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">NL</div>
+      <div>
+        <h1>Online Library — NCV</h1>
+        <div class="small">A lightweight offline-first library for NCV resources</div>
+      </div>
+    </div>
+
+    <div class="searchbar">
+      <input id="search" type="text" placeholder="Search title, author, or keyword..." />
+      <select id="filterLevel">
+        <option value="all">All Levels &amp; Categories</option>
+        <option value="Information Technology (NCV)">Information Technology (NCV)</option>
+        <option value="Mathematics">Mathematics</option>
+        <option value="Business Studies">Business Studies</option>
+        <option value="Science">Science</option>
+      </select>
+      <button id="addBookBtn" class="btn">+ Add book</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <nav class="aside">
+        <h3>Categories</h3>
+        <div class="categories" id="categoryList">
+          <!-- categories inserted by JS -->
+        </div>
+        <hr style="margin:12px 0" />
+        <h3>Quick actions</h3>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button id="showFavorites" class="btn">Favorites</button>
+          <button id="exportData" class="btn">Export JSON</button>
+          <button id="importData" class="btn">Import JSON</button>
+        </div>
+        <input id="jsonInput" type="file" accept="application/json" style="margin-top:12px;display:none" />
+      </nav>
+
+      <section class="content">
+        <div class="toolbar">
+          <div class="small" id="resultsCount">0 books</div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <label class="small">Sort</label>
+            <select id="sortBy">
+              <option value="newest">Newest</option>
+              <option value="az">Title A → Z</option>
+              <option value="za">Title Z → A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="cards" id="cards"></div>
+
+        <footer>
+          Built for NCV learners — includes category Information Technology (NCV). Data is stored in your browser (localStorage).
+        </footer>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal / Reader -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #e6edf3">
+        <strong id="modalTitle">Book title</strong>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="openDownload" class="btn">Download</button>
+          <button id="closeModal" class="btn">Close</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="reader" id="readerArea">Select a book to view details and open reading view.</div>
+        <div class="details">
+          <h4 id="bookAuthor">Author</h4>
+          <p id="bookCategory" class="small"></p>
+          <p id="bookDesc" style="white-space:pre-wrap"></p>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button id="favToggle" class="btn">♡ Favourite</button>
+            <button id="openInNew" class="btn">Open in new tab</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add book form (hidden modal) -->
+  <div id="addModal" class="modal">
+    <div class="modal-card" style="max-width:700px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #e6edf3">
+        <strong>Add a new book</strong>
+        <button id="closeAdd">Close</button>
+      </div>
+      <div style="padding:12px">
+        <form id="addForm">
+          <div class="row">
+            <input id="tTitle" placeholder="Title" required />
+            <input id="tAuthor" placeholder="Author" required />
+          </div>
+          <div class="row" style="margin-top:8px">
+            <input id="tCategory" placeholder="Category (e.g. Information Technology (NCV))" required />
+          </div>
+          <div style="margin-top:8px">
+            <input id="tCover" placeholder="Cover image URL (optional)" />
+            <input id="tFile" placeholder="File URL (PDF) or external link" />
+          </div>
+          <div style="margin-top:8px">
+            <textarea id="tDesc" rows="4" placeholder="Short description"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button type="submit" class="btn">Add book</button>
+            <button id="clearForm" type="button" class="btn">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample data — you can replace these with your own file links (PDFs hosted somewhere) or add via the Add book button.
+    const SAMPLE_BOOKS = [
+      {
+        id: genId(),
+        title: 'Information Technology — NCV Level 2 (Introduction)',
+        author: 'S. Mokoena',
+        category: 'Information Technology (NCV)',
+        cover: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.0.3&s=abcd',
+        file: 'https://example-files.online-convert.com/document/pdf/example.pdf',
+        desc: 'A beginner-friendly guide aligned to NCV curriculum. Contains exercises and practical examples.'
+      },
+      {
+        id: genId(),
+        title: 'Computer Applications — NCV Level 4',
+        author: 'L. Dlamini',
+        category: 'Information Technology (NCV)',
+        cover: '',
+        file: 'https://example-files.online-convert.com/document/pdf/example.pdf',
+        desc: 'Covers spreadsheets, word processing and presentation skills with worked examples.'
+      },
+      {
+        id: genId(),
+        title: 'Mathematics — NCV',
+        author: 'P. Nkosi',
+        category: 'Mathematics',
+        cover: '',
+        file: '',
+        desc: 'Mathematics topics useful for NCV students.'
+      }
+    ];
+
+    // Utilities
+    function genId(){ return 'b_'+Math.random().toString(36).slice(2,9) }
+    function qs(sel){ return document.querySelector(sel) }
+    function qsa(sel){ return Array.from(document.querySelectorAll(sel)) }
+
+    // State
+    let books = loadData() || SAMPLE_BOOKS.slice();
+    let activeCategory = 'All';
+    let showOnlyFavorites = false;
+
+    // DOM refs
+    const cards = qs('#cards');
+    const categoryList = qs('#categoryList');
+    const resultsCount = qs('#resultsCount');
+    const search = qs('#search');
+    const filterLevel = qs('#filterLevel');
+    const sortBy = qs('#sortBy');
+    const modal = qs('#modal');
+    const modalTitle = qs('#modalTitle');
+    const readerArea = qs('#readerArea');
+    const bookAuthor = qs('#bookAuthor');
+    const bookCategory = qs('#bookCategory');
+    const bookDesc = qs('#bookDesc');
+    const favToggle = qs('#favToggle');
+    const openInNew = qs('#openInNew');
+    const openDownload = qs('#openDownload');
+    const addBookBtn = qs('#addBookBtn');
+    const addModal = qs('#addModal');
+    const addForm = qs('#addForm');
+    const closeAdd = qs('#closeAdd');
+    const closeModal = qs('#closeModal');
+    const showFavoritesBtn = qs('#showFavorites');
+    const exportData = qs('#exportData');
+    const importData = qs('#importData');
+    const jsonInput = qs('#jsonInput');
+
+    // Initialization
+    renderCategories();
+    render();
+    attachEvents();
+
+    function attachEvents(){
+      search.addEventListener('input', render);
+      filterLevel.addEventListener('change', ()=>{ activeCategory = filterLevel.value; render(); });
+      sortBy.addEventListener('change', render);
+      addBookBtn.addEventListener('click', ()=> openAdd(true));
+      closeAdd.addEventListener('click', ()=> openAdd(false));
+      closeModal.addEventListener('click', closeReader);
+      showFavoritesBtn.addEventListener('click', ()=>{ showOnlyFavorites = !showOnlyFavorites; showFavoritesBtn.textContent = showOnlyFavorites? 'Show all':'Favorites'; render(); });
+      exportData.addEventListener('click', ()=>{
+        const data = JSON.stringify(books, null, 2);
+        const blob = new Blob([data],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download='books.json'; a.click(); URL.revokeObjectURL(url);
+      });
+      importData.addEventListener('click', ()=> jsonInput.click());
+      jsonInput.addEventListener('change', (e)=>{
+        const file = e.target.files[0]; if(!file) return;
+        const reader = new FileReader(); reader.onload = ()=>{
+          try{
+            const imported = JSON.parse(reader.result);
+            if(Array.isArray(imported)){
+              books = imported; saveData(); renderCategories(); render();
+              alert('Imported '+imported.length+' books');
+            } else alert('JSON should be an array of books');
+          } catch(err){ alert('Invalid JSON') }
+        }; reader.readAsText(file);
+      });
+
+      addForm.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const newBook = {
+          id: genId(),
+          title: qs('#tTitle').value.trim(),
+          author: qs('#tAuthor').value.trim(),
+          category: qs('#tCategory').value.trim() || 'Uncategorized',
+          cover: qs('#tCover').value.trim(),
+          file: qs('#tFile').value.trim(),
+          desc: qs('#tDesc').value.trim(),
+          fav: false,
+          createdAt: Date.now()
+        };
+        books.unshift(newBook); saveData(); renderCategories(); render(); openAdd(false); addForm.reset();
+      });
+    }
+
+    function openAdd(show){ addModal.classList.toggle('open', !!show); }
+
+    function saveData(){ try{ localStorage.setItem('online_library_books', JSON.stringify(books)); } catch(e){ console.warn('Could not save',e) } }
+    function loadData(){ try{ return JSON.parse(localStorage.getItem('online_library_books')||'null') } catch(e){return null} }
+
+    function renderCategories(){
+      const cats = ['All', ...Array.from(new Set(books.map(b=>b.category))).sort()];
+      categoryList.innerHTML = '';
+      cats.forEach(c=>{
+        const el = document.createElement('div'); el.className='category'+(c===activeCategory? ' active':''); el.textContent = c; el.addEventListener('click', ()=>{ activeCategory = c; render(); });
+        categoryList.appendChild(el);
+      });
+    }
+
+    function render(){
+      let q = search.value.trim().toLowerCase();
+      let filtered = books.slice();
+      if(activeCategory && activeCategory!=='All' && activeCategory!=='all') filtered = filtered.filter(b=>b.category===activeCategory);
+      if(filterLevel.value && filterLevel.value!=='all') filtered = filtered.filter(b=>b.category===filterLevel.value);
+      if(q) filtered = filtered.filter(b=> (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q) || (b.desc||'').toLowerCase().includes(q));
+      if(showOnlyFavorites) filtered = filtered.filter(b=>b.fav);
+
+      // sort
+      const s = sortBy.value;
+      if(s==='az') filtered.sort((a,b)=>a.title.localeCompare(b.title));
+      else if(s==='za') filtered.sort((a,b)=>b.title.localeCompare(a.title));
+      else filtered.sort((a,b)=> (b.createdAt||0)-(a.createdAt||0) );
+
+      resultsCount.textContent = filtered.length + ' book' + (filtered.length===1? '':'s');
+
+      cards.innerHTML = '';
+      filtered.forEach(b=>{
+        const card = document.createElement('article'); card.className='card';
+        const img = document.createElement('img'); img.className='cover'; img.alt = b.title + ' cover'; img.src = b.cover || 'https://via.placeholder.com/400x520?text=No+cover';
+        card.appendChild(img);
+        const h = document.createElement('div'); h.innerHTML = `<strong>${escapeHtml(b.title)}</strong><div class="small">${escapeHtml(b.author || '')}</div>`;
+        card.appendChild(h);
+        const meta = document.createElement('div'); meta.className='meta';
+        const cat = document.createElement('div'); cat.className='small chip'; cat.textContent = b.category || 'Uncategorized';
+        meta.appendChild(cat);
+        const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px';
+        const openBtn = document.createElement('button'); openBtn.className='btn'; openBtn.textContent='View'; openBtn.onclick = ()=> openReader(b.id);
+        const favBtn = document.createElement('button'); favBtn.className='btn'; favBtn.textContent = b.fav? '♥':'♡'; favBtn.onclick = (ev)=>{ ev.stopPropagation(); toggleFav(b.id); };
+        actions.appendChild(openBtn); actions.appendChild(favBtn);
+        meta.appendChild(actions);
+        card.appendChild(meta);
+        cards.appendChild(card);
+      });
+
+      if(filtered.length===0){ cards.innerHTML = '<div style="padding:18px;background:white;border-radius:10px;border:1px solid #e6edf3">No books found. Use "Add book" to add resources.</div>' }
+    }
+
+    function toggleFav(id){ const b = books.find(x=>x.id===id); if(!b) return; b.fav = !b.fav; saveData(); render(); }
+
+    function openReader(id){ const b = books.find(x=>x.id===id); if(!b) return; modal.classList.add('open'); modalTitle.textContent = b.title; bookAuthor.textContent = b.author || ''; bookCategory.textContent = b.category || ''; bookDesc.textContent = b.desc || ''; favToggle.textContent = b.fav? '♥ Favourite':'♡ Favourite';
+      favToggle.onclick = ()=>{ b.fav=!b.fav; favToggle.textContent = b.fav? '♥ Favourite':'♡ Favourite'; saveData(); render(); };
+      openInNew.onclick = ()=>{ if(b.file) window.open(b.file,'_blank'); else alert('No file provided for this book'); };
+      openDownload.onclick = ()=>{ if(b.file) window.location.href = b.file; else alert('No file to download'); };
+
+      // Reader area: embed PDF or show placeholder
+      if(b.file && b.file.endsWith('.pdf')){
+        readerArea.innerHTML = `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(b.file)}&embedded=true" style="width:100%;height:100%;border:0"></iframe>`;
+      } else if(b.file){
+        readerArea.innerHTML = `<div style="padding:18px;text-align:center">Open external resource:<br/><a href="${b.file}" target="_blank" rel="noopener">${b.file}</a></div>`;
+      } else {
+        readerArea.innerHTML = `<div style="padding:18px;text-align:center">No file attached. Use the Add book function to attach a PDF or external link.</div>`;
+      }
+    }
+
+    function closeReader(){ modal.classList.remove('open'); readerArea.innerHTML = 'Select a book to view details and open reading view.'; }
+
+    function escapeHtml(s){ return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;') }
+
+    // Expose some quick helpers for demo
+    window.openAdd = openAdd;
+
+  </script>
+
+</body>
+</html>

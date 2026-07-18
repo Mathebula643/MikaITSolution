@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🔄 Cloud Storage Functional Process — Demo</title>
+  <style>
+    /* Simple modern styles */
+    :root {
+      --bg: #0f1724;
+      --card: #0b1220;
+      --muted: #94a3b8;
+      --accent: #4f46e5;
+      --accent-2: #06b6d4;
+      --danger: #ef4444;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin:0;
+      background: linear-gradient(180deg,#031026 0%, #071426 100%);
+      color:#e6eef8;
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:28px;
+    }
+    .container {
+      width:1100px;
+      max-width:96%;
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:20px;
+    }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      padding:18px;
+      box-shadow: 0 6px 24px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    h1 { font-size:20px; margin:0 0 10px 0; }
+    h2 { font-size:16px; margin:6px 0 12px 0; color:var(--muted); font-weight:600;}
+    label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    input[type="text"], input[type="email"], input[type="password"], select {
+      width:100%; padding:10px; border-radius:8px;
+      background:var(--card); border:1px solid rgba(255,255,255,0.03);
+      color:inherit; margin-bottom:10px;
+    }
+    button { background:var(--accent); color:white; padding:10px 12px; border-radius:8px; border: none; cursor:pointer; font-weight:600; }
+    button.secondary { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); }
+    .muted { color:var(--muted); font-size:13px; }
+    .small { font-size:12px; color:var(--muted); }
+    .nav { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+    .nav button { padding:8px 10px; font-size:13px; background:transparent; border:1px solid rgba(255,255,255,0.03); color:var(--muted); }
+    /* dashboard controls */
+    .stat { display:flex; justify-content:space-between; gap:8px; margin-bottom:10px; align-items:center; }
+    .progress {
+      height:12px; width:100%; background:rgba(255,255,255,0.04); border-radius:8px; overflow:hidden;
+    }
+    .progress > i { display:block; height:100%; background: linear-gradient(90deg,var(--accent),var(--accent-2)); width:0%; transition:width .3s ease; }
+    /* file list */
+    .files { margin-top:10px; }
+    .file { display:flex; gap:12px; align-items:center; padding:10px; border-radius:8px; background:var(--glass); margin-bottom:8px; border:1px solid rgba(255,255,255,0.02); }
+    .file .meta { flex:1; }
+    .tag { padding:6px 8px; border-radius:6px; background:rgba(255,255,255,0.03); font-size:12px; color:var(--muted); }
+    .dropzone { border:2px dashed rgba(255,255,255,0.04); padding:18px; border-radius:10px; text-align:center; color:var(--muted); cursor:pointer; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .right { text-align:right; }
+    .pill { background:rgba(255,255,255,0.03); padding:6px 8px; border-radius:999px; font-size:12px; color:var(--muted); }
+    .danger { background:var(--danger); color:white; padding:6px 8px; border-radius:8px; border:none; cursor:pointer; }
+    .hidden { display:none !important; }
+    .log { font-size:12px; color:var(--muted); max-height:120px; overflow:auto; padding:8px; background: rgba(255,255,255,0.02); border-radius:8px; }
+    footer { margin-top:14px; text-align:center; color:var(--muted); font-size:13px; }
+    .flex { display:flex; gap:10px; align-items:center; }
+    .chip { padding:6px 8px; border-radius:6px; background:rgba(255,255,255,0.02); color:var(--muted); font-size:12px; }
+    input[type="file"] { display:none; }
+    .folder { font-weight:700; color:var(--accent-2); }
+    .btn-link { background:transparent; color:var(--accent-2); border: none; cursor:pointer; font-weight:600; }
+    .switch { display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+    .switch input { display:none; }
+    .switch .knob { width:36px; height:18px; background:rgba(255,255,255,0.06); border-radius:999px; position:relative; padding:2px; transition:.2s; }
+    .switch .knob i { display:block; width:12px; height:12px; background:white; border-radius:50%; transform:translateX(0); transition:.2s; }
+    .switch input:checked + .knob { background:linear-gradient(90deg,var(--accent),var(--accent-2)); }
+    .switch input:checked + .knob i { transform:translateX(18px); }
+    .code { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:12px; background:rgba(0,0,0,0.12); padding:6px; border-radius:6px; }
+    @media (max-width:880px){
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Left: Auth / Profile -->
+    <div class="panel" id="authPanel">
+      <h1>🔄 Cloud Storage — Demo</h1>
+      <h2 id="authSubtitle">Please register or login to continue</h2>
+
+      <!-- Registration -->
+      <div id="registerBox">
+        <label>Full name</label>
+        <input id="reg_name" type="text" placeholder="Jane Doe" />
+        <label>Email</label>
+        <input id="reg_email" type="email" placeholder="you@example.com" />
+        <label>Password</label>
+        <input id="reg_password" type="password" placeholder="Strong password" />
+        <div style="display:flex;gap:8px;">
+          <button id="btnRegister">Create account</button>
+          <button class="secondary" id="btnShowLogin">Already have an account?</button>
+        </div>
+        <div class="small" style="margin-top:8px;">
+          Accounts are stored locally for this demo. Passwords are hashed in the browser (demo only).
+        </div>
+      </div>
+
+      <!-- Email verification simulation -->
+      <div id="verifyBox" class="hidden">
+        <label>Verification code (sent to email)</label>
+        <div class="row">
+          <input id="verify_code" type="text" placeholder="6-digit code" />
+          <button id="btnVerify">Verify</button>
+        </div>
+        <div class="small" id="sentCode">Sent code: <span class="code" id="sentCodeVal"></span></div>
+      </div>
+
+      <!-- Login -->
+      <div id="loginBox" class="hidden">
+        <label>Email</label>
+        <input id="login_email" type="email" placeholder="you@example.com" />
+        <label>Password</label>
+        <input id="login_password" type="password" placeholder="Password" />
+        <div style="display:flex;gap:8px;">
+          <button id="btnLogin">Login</button>
+          <button class="secondary" id="btnShowRegister">Create account</button>
+        </div>
+        <div style="margin-top:10px; display:flex;align-items:center;gap:8px;">
+          <label class="switch">
+            <input id="login_2fa_toggle" type="checkbox" />
+            <div class="knob"><i></i></div>
+          </label>
+          <div class="small">Enable simulated 2FA for this login</div>
+        </div>
+      </div>
+
+      <!-- 2FA verification -->
+      <div id="2faBox" class="hidden">
+        <label>Enter 2FA code</label>
+        <div class="row">
+          <input id="twofa_code" type="text" placeholder="6-digit code" />
+          <button id="btn2fa">Verify</button>
+        </div>
+        <div class="small">Sent code: <span class="code" id="twofaSent"></span></div>
+      </div>
+
+      <!-- Profile when logged in -->
+      <div id="profileBox" class="hidden">
+        <h2>Welcome, <span id="profileName"></span></h2>
+        <div class="muted">Email: <span id="profileEmail"></span></div>
+        <div style="margin-top:12px;">
+          <div class="stat"><div class="muted">Role</div><div class="pill" id="profileRole">user</div></div>
+          <div class="stat"><div class="muted">Storage used</div><div class="pill" id="storageOverview">0 / 1 GB</div></div>
+          <div style="margin-top:8px;">
+            <button id="btnLogout" class="secondary">Logout</button>
+            <button id="btnMakeAdmin" class="secondary">Make Admin (demo)</button>
+          </div>
+        </div>
+      </div>
+
+      <hr style="margin:14px 0; border-color: rgba(255,255,255,0.03)" />
+      <div class="small">
+        <strong>Process flow enforced:</strong>
+        <ol style="padding-left:18px;margin:8px 0 0 0;">
+          <li>Register → verify → Login</li>
+          <li>2FA optional</li>
+          <li>Then access uploads, files, sharing, versions, backup, billing, logout</li>
+        </ol>
+      </div>
+      <footer>Demo — not for production</footer>
+    </div>
+
+    <!-- Right: Dashboard -->
+    <div class="panel" id="dashboard" aria-hidden="true">
+      <div class="row" style="justify-content:space-between;align-items:start">
+        <div>
+          <h1 id="dashTitle">Dashboard</h1>
+          <h2 id="dashSub" class="muted">Your cloud storage workspace</h2>
+        </div>
+        <div class="right">
+          <div class="small muted">Signed in as <span id="dashUserEmail"></span></div>
+          <div style="margin-top:6px;">
+            <button id="btnOpenUpload" class="btn-link">Upload / New</button>
+            <button id="btnOpenFiles" class="btn-link">Files</button>
+            <button id="btnOpenLog" class="btn-link">Activity</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Storage / stats -->
+      <div style="margin-top:10px;">
+        <div class="stat">
+          <div>
+            <div class="muted">Storage usage</div>
+            <div class="small">Used vs allocated</div>
+          </div>
+          <div style="width:320px">
+            <div class="progress"><i id="progressBar"></i></div>
+            <div class="small" style="margin-top:6px;"><span id="usedText">0 MB</span> used of <span id="allocText">1 GB</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload / controls -->
+      <div id="uploadSection" style="margin-top:14px;">
+        <div class="row" style="justify-content:space-between;">
+          <h2>Upload / Create</h2>
+          <div class="muted small">Drag & drop supported</div>
+        </div>
+        <div class="dropzone" id="dropzone">Click or drop files here to upload
+          <div style="margin-top:10px;">
+            <label class="btn secondary">Choose files <input id="fileinput" type="file" multiple /></label>
+            <button class="secondary" id="btnNewFolder">New Folder</button>
+            <label class="small" style="margin-left:8px;">Encrypt uploads <input id="optEncrypt" type="checkbox" checked /></label>
+          </div>
+        </div>
+
+        <div id="uploadingStatus" class="small" style="margin-top:8px;"></div>
+      </div>
+
+      <!-- Files list -->
+      <div id="filesSection" style="margin-top:16px;">
+        <div class="row" style="justify-content:space-between;">
+          <h2>Files & Folders</h2>
+          <div class="row">
+            <input id="searchBox" type="text" placeholder="Search name..." style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit" />
+            <select id="viewFilter"><option value="all">All</option><option value="my">My files</option><option value="shared">Shared with me</option><option value="trash">Trash</option></select>
+          </div>
+        </div>
+
+        <div class="files" id="fileList"></div>
+      </div>
+
+      <!-- Activity / logs -->
+      <div id="logSection" style="margin-top:18px;display:none;">
+        <h2>Activity Log</h2>
+        <div class="log" id="activityLog"></div>
+      </div>
+
+      <!-- Sharing area (modal-like) -->
+      <div id="shareModal" class="hidden" style="margin-top:12px;">
+        <h2>Share / Collaborate</h2>
+        <div class="small">Link (public share): <span id="shareLink" class="code"></span></div>
+        <div style="margin-top:8px;">
+          <label>Permission</label>
+          <select id="sharePerm">
+            <option value="view">View</option>
+            <option value="edit">Edit</option>
+            <option value="download">Download</option>
+            <option value="comment">Comment</option>
+          </select>
+        </div>
+        <div style="margin-top:8px;">
+          <label>Add collaborator (email)</label>
+          <div class="row">
+            <input id="collabEmail" type="email" placeholder="collab@example.com" />
+            <button id="btnAddCollab">Add</button>
+          </div>
+        </div>
+        <div class="small" style="margin-top:8px;">Current ACL: <span id="aclList" class="code"></span></div>
+        <div style="margin-top:8px;"><button id="btnCloseShare" class="secondary">Close</button></div>
+      </div>
+
+      <footer style="margin-top:18px;" class="small muted">Versioning, Trash, Backup simulated. Downloads decrypt on the fly.</footer>
+    </div>
+  </div>
+
+<script>
+/*
+  Cloud Storage Functional Process — DEMO (frontend-only)
+  Features implemented:
+  - Registration + simulated email verification
+  - Login with optional simulated 2FA
+  - Dashboard that shows storage used and allocation (1 GB default)
+  - Upload files (drag & drop / file input). Files are stored in localStorage as base64 (demo).
+  - Optionally "encrypt" uploads with Web Crypto (AES-GCM) — key derived from user password (demo).
+  - File metadata stored (name, size, type, date)
+  - Basic folder support (folders are objects with children)
+  - Rename, delete (moves to trash), restore, permanent delete
+  - Versioning: uploading same filename in same folder creates a new version entry
+  - Sharing: generate share token (public link string stored locally), basic ACL array
+  - Activity log: records important actions
+  - Access control: file has owner, ACL entries, admin role can change user's role
+  - Download: decrypt on the fly and trigger blob download
+  - Logout / session invalidation
+
+  IMPORTANT: This is a demo and not secure. It's for prototyping only.
+*/
+
+/* ---------- Storage helpers ---------- */
+// Keys in localStorage:
+const LS_ACCOUNTS = 'demo_accounts';       // { email: { name, email, passwordHash, verified, role, allocBytes, usedBytes } }
+const LS_FILES = 'demo_files';             // files object keyed by id
+const LS_SHARES = 'demo_shares';           // share tokens -> fileId + perms
+const LS_ACTIVITY = 'demo_activity';       // array
+const LS_SESSION = 'demo_session';         // current email
+
+// Load or initialize
+function loadJSON(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch(e){ return def; } }
+function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+let ACCOUNTS = loadJSON(LS_ACCOUNTS, {});
+let FILES = loadJSON(LS_FILES, {});
+let SHARES = loadJSON(LS_SHARES, {});
+let ACTIVITY = loadJSON(LS_ACTIVITY, []);
+let SESSION = loadJSON(LS_SESSION, null);
+
+/* ---------- Utility ---------- */
+function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,10); }
+function nowISO(){ return new Date().toISOString(); }
+function bytesToReadable(b){
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1024*1024*1024) return (b/(1024*1024)).toFixed(1) + ' MB';
+  return (b/(1024*1024*1024)).toFixed(2) + ' GB';
+}
+function logActivity(text){ ACTIVITY.unshift({ts: nowISO(), text}); saveJSON(LS_ACTIVITY, ACTIVITY); renderActivity(); }
+
+/* ---------- Crypto helpers (demo) ---------- */
+// Hash password with SHA-256 -> hex
+async function hashHex(str){
+  const data = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const arr = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+  return arr;
+}
+
+// AES-GCM encrypt/decrypt using key derived from passphrase (demo). Returns base64 ciphertext + iv.
+async function deriveKeyFromPassphrase(passphrase, salt='demo_salt'){
+  const enc = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), {name:'PBKDF2'}, false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({
+    name:'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash:'SHA-256'
+  }, baseKey, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+  return key;
+}
+function abToBase64(buf){
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const len = bytes.byteLength;
+  for (let i=0;i<len;i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function base64ToAb(b64){
+  const bin = atob(b64);
+  const len = bin.length;
+  const bytes = new Uint8Array(len);
+  for(let i=0;i<len;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+async function encryptBase64(plainBytes, key){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, plainBytes);
+  return {iv: abToBase64(iv.buffer), ct: abToBase64(ct)};
+}
+async function decryptBase64(ivB64, ctB64, key){
+  const iv = base64ToAb(ivB64);
+  const ct = base64ToAb(ctB64);
+  const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv: new Uint8Array(iv)}, key, ct);
+  return new Uint8Array(plain);
+}
+
+/* ---------- File model (simple) ----------
+ FILE OBJECT:
+ {
+   id,
+   name,
+   type,
+   size,
+   ownerEmail,
+   folderId (null for root),
+   createdAt,
+   versions: [ {id, dataB64, iv, createdAt, enc:true/false, size, note} ],
+   acl: [ {email, perm} ],
+   deleted: false,
+   deletedAt: null
+ }
+------------------------------------------- */
+function saveAll(){ saveJSON(LS_ACCOUNTS, ACCOUNTS); saveJSON(LS_FILES, FILES); saveJSON(LS_SHARES, SHARES); saveJSON(LS_ACTIVITY, ACTIVITY); if (SESSION===null) localStorage.removeItem(LS_SESSION); else saveJSON(LS_SESSION, SESSION); }
+
+/* ---------- UI references ---------- */
+const registerBox = document.getElementById('registerBox');
+const loginBox = document.getElementById('loginBox');
+const verifyBox = document.getElementById('verifyBox');
+const twofaBox = document.getElementById('2faBox');
+const profileBox = document.getElementById('profileBox');
+const authSubtitle = document.getElementById('authSubtitle');
+
+const btnShowLogin = document.getElementById('btnShowLogin');
+const btnShowRegister = document.getElementById('btnShowRegister');
+const btnRegister = document.getElementById('btnRegister');
+const btnLogin = document.getElementById('btnLogin');
+const btnLogout = document.getElementById('btnLogout');
+const btnMakeAdmin = document.getElementById('btnMakeAdmin');
+
+const verifyCodeDisplay = document.getElementById('sentCodeVal');
+const btnVerify = document.getElementById('btnVerify');
+
+const twofaSentDisplay = document.getElementById('twofaSent');
+const btn2fa = document.getElementById('btn2fa');
+
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const profileRole = document.getElementById('profileRole');
+const storageOverview = document.getElementById('storageOverview');
+
+const dashboard = document.getElementById('dashboard');
+const authPanel = document.getElementById('authPanel');
+const dashUserEmail = document.getElementById('dashUserEmail');
+const progressBar = document.getElementById('progressBar');
+const usedText = document.getElementById('usedText');
+const allocText = document.getElementById('allocText');
+
+const dropzone = document.getElementById('dropzone');
+const fileinput = document.getElementById('fileinput');
+const uploadingStatus = document.getElementById('uploadingStatus');
+const fileList = document.getElementById('fileList');
+const viewFilter = document.getElementById('viewFilter');
+const searchBox = document.getElementById('searchBox');
+
+const uploadSection = document.getElementById('uploadSection');
+const filesSection = document.getElementById('filesSection');
+
+const activityLog = document.getElementById('activityLog');
+const logSection = document.getElementById('logSection');
+
+const shareModal = document.getElementById('shareModal');
+const shareLink = document.getElementById('shareLink');
+const sharePerm = document.getElementById('sharePerm');
+const collabEmail = document.getElementById('collabEmail');
+const aclList = document.getElementById('aclList');
+const btnCloseShare = document.getElementById('btnCloseShare');
+const btnAddCollab = document.getElementById('btnAddCollab');
+
+const optEncrypt = document.getElementById('optEncrypt');
+const btnOpenUpload = document.getElementById('btnOpenUpload');
+const btnOpenFiles = document.getElementById('btnOpenFiles');
+const btnOpenLog = document.getElementById('btnOpenLog');
+const btnNewFolder = document.getElementById('btnNewFolder');
+
+/* ---------- Auth flow ---------- */
+let pendingVerify = null;  // {email, code}
+let pending2FA = null;     // {email, code}
+
+function show(element){ element.classList.remove('hidden'); }
+function hide(element){ element.classList.add('hidden'); }
+
+function startUI(){
+  // if session exists, show dashboard
+  if (SESSION && ACCOUNTS[SESSION]) {
+    showProfile(ACCOUNTS[SESSION]);
+    showDashboard();
+  } else {
+    // show auth
+    hide(profileBox);
+    hide(verifyBox);
+    hide(twofaBox);
+    show(registerBox);
+    hide(loginBox);
+    hide(profileBox);
+    hide(dashboard);
+    authSubtitle.textContent = "Please register or login to continue";
+  }
+  renderActivity();
+}
+
+/* -------- Registration -------- */
+btnShowLogin.addEventListener('click', ()=>{
+  hide(registerBox);
+  show(loginBox);
+});
+btnShowRegister.addEventListener('click', ()=>{
+  show(registerBox);
+  hide(loginBox);
+});
+
+document.getElementById('btnRegister').addEventListener('click', async ()=>{
+  const name = document.getElementById('reg_name').value.trim();
+  const email = document.getElementById('reg_email').value.trim().toLowerCase();
+  const password = document.getElementById('reg_password').value;
+
+  if (!name || !email || !password) return alert('Please fill all fields.');
+  if (ACCOUNTS[email]) return alert('Account exists. Please login.');
+
+  const hash = await hashHex(password);
+  // default allocation 1 GB (in bytes)
+  ACCOUNTS[email] = { name, email, passwordHash: hash, verified:false, role:'user', allocBytes: 1024*1024*1024, usedBytes: 0 };
+  saveAll();
+
+  // simulate sending verification code
+  const code = Math.floor(100000 + Math.random()*900000).toString();
+  pendingVerify = { email, code };
+  verifyCodeDisplay.textContent = code;
+  show(verifyBox);
+  hide(registerBox);
+  logActivity(`Verification code generated for ${email}`);
+  authSubtitle.textContent = 'Please verify your email to complete registration';
+});
+
+btnVerify.addEventListener('click', ()=>{
+  const code = document.getElementById('verify_code').value.trim();
+  if (!pendingVerify) return alert('No verification in progress');
+  if (code === pendingVerify.code){
+    ACCOUNTS[pendingVerify.email].verified = true;
+    saveAll();
+    logActivity(`Account verified for ${pendingVerify.email}`);
+    alert('Email verified! Please login.');
+    pendingVerify = null;
+    hide(verifyBox);
+    show(loginBox);
+    authSubtitle.textContent = 'Verified — login to continue';
+  } else alert('Wrong code');
+});
+
+/* -------- Login & optional 2FA -------- */
+document.getElementById('btnLogin').addEventListener('click', async ()=>{
+  const email = document.getElementById('login_email').value.trim().toLowerCase();
+  const password = document.getElementById('login_password').value;
+
+  if (!email || !password) return alert('Fill email & password.');
+  const acct = ACCOUNTS[email];
+  if (!acct) return alert('Account not found.');
+  if (!acct.verified) return alert('Please verify your email first.');
+
+  const hash = await hashHex(password);
+  if (hash !== acct.passwordHash) return alert('Wrong password.');
+
+  // if 2FA toggle on, generate code and show 2FA step
+  const want2FA = document.getElementById('login_2fa_toggle').checked;
+  if (want2FA){
+    const code = Math.floor(100000 + Math.random()*900000).toString();
+    pending2FA = {email, code};
+    twofaSentDisplay.textContent = code;
+    show(twofaBox);
+    hide(loginBox);
+    authSubtitle.textContent = '2FA requested — enter the code';
+    logActivity(`2FA code generated for ${email}`);
+    return;
+  }
+
+  // login success
+  SESSION = email;
+  saveAll();
+  logActivity(`User logged in: ${email}`);
+  showProfile(acct);
+  showDashboard();
+});
+
+btn2fa.addEventListener('click', ()=>{
+  const code = document.getElementById('twofa_code').value.trim();
+  if (!pending2FA) return alert('No 2FA pending.');
+  if (code === pending2FA.code){
+    SESSION = pending2FA.email;
+    saveAll();
+    logActivity(`User logged in with 2FA: ${SESSION}`);
+    pending2FA = null;
+    hide(twofaBox);
+    showProfile(ACCOUNTS[SESSION]);
+    showDashboard();
+  } else alert('Incorrect 2FA code.');
+});
+
+function showProfile(acct){
+  profileName.textContent = acct.name;
+  profileEmail.textContent = acct.email;
+  profileRole.textContent = acct.role;
+  storageOverview.textContent = `${bytesToReadable(acct.usedBytes)} / ${bytesToReadable(acct.allocBytes)}`;
+  show(profileBox);
+  hide(registerBox);
+  hide(loginBox);
+  hide(verifyBox);
+  hide(twofaBox);
+}
+
+/* -------- Admin demo action -------- */
+btnMakeAdmin.addEventListener('click', ()=>{
+  if (!SESSION) return alert('Not signed in');
+  ACCOUNTS[SESSION].role = 'admin';
+  profileRole.textContent = 'admin';
+  saveAll();
+  logActivity(`${SESSION} role changed to admin`);
+  alert('You are now admin in this demo.');
+});
+
+/* -------- Logout -------- */
+btnLogout.addEventListener('click', ()=>{
+  if (!SESSION) return;
+  logActivity(`User logged out: ${SESSION}`);
+  SESSION = null;
+  saveAll();
+  hide(dashboard);
+  hide(profileBox);
+  show(registerBox);
+  show(loginBox);
+  authSubtitle.textContent = 'Logged out. Please register or login';
+});
+
+/* -------- Dashboard show/hide -------- */
+function showDashboard(){
+  hide(registerBox); hide(loginBox); hide(verifyBox); hide(twofaBox);
+  show(dashboard);
+  dashUserEmail.textContent = SESSION;
+  renderStorage();
+  renderFiles();
+  renderActivity();
+}
+
+/* -------- Storage / Files management -------- */
+function renderStorage(){
+  if (!SESSION) return;
+  const acct = ACCOUNTS[SESSION];
+  const used = acct.usedBytes || 0;
+  const alloc = acct.allocBytes || 1024*1024*1024;
+  const pct = Math.min(100, Math.round((used/alloc)*10000)/100);
+  progressBar.style.width = pct + '%';
+  usedText.textContent = bytesToReadable(used);
+  allocText.textContent = bytesToReadable(alloc);
+  storageOverview.textContent = `${bytesToReadable(used)} / ${bytesToReadable(alloc)}`;
+  // prompt to upgrade (demo)
+  if (used >= alloc) {
+    uploadingStatus.innerHTML = '<span style="color:orange;font-weight:600;">Storage full — please upgrade plan (demo)</span>';
+  } else uploadingStatus.textContent = '';
+}
+
+function ensureRootForUser(email){
+  // create a root folder placeholder for user's items (folderId null = root)
+  // nothing specific needed.
+}
+
+/* File rendering */
+function renderFiles(){
+  fileList.innerHTML = '';
+  const filter = viewFilter.value || 'all';
+  const q = searchBox.value.trim().toLowerCase();
+
+  const arr = Object.values(FILES).filter(f=>{
+    // show only top-level and files not deleted except if view=trash
+    if (filter==='trash') return f.deleted === true && f.ownerEmail === SESSION;
+    if (filter==='my') return f.ownerEmail === SESSION && !f.deleted;
+    if (filter==='shared') return f.ownerEmail !== SESSION && !f.deleted && (f.acl && f.acl.some(a => a.email === SESSION));
+    return !f.deleted;
+  });
+
+  const filtered = arr.filter(f => (!q || f.name.toLowerCase().includes(q)));
+  if (filtered.length === 0) fileList.innerHTML = '<div class="muted">No files found.</div>';
+  filtered.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+  filtered.forEach(renderFileCard);
+  renderStorage();
+}
+
+function renderFileCard(file){
+  const div = document.createElement('div'); div.className='file';
+  const icon = document.createElement('div'); icon.innerHTML = file.isFolder ? '📁' : '📄';
+  icon.style.fontSize='20px';
+  const meta = document.createElement('div'); meta.className='meta';
+  const titleRow = document.createElement('div'); titleRow.className='row';
+  const nameEl = document.createElement('div'); nameEl.innerHTML = `<div style="font-weight:700">${file.name}</div><div class="small muted">${file.type || ''} • ${bytesToReadable(file.size||0)} • ${new Date(file.createdAt).toLocaleString()}</div>`;
+  titleRow.appendChild(nameEl);
+  meta.appendChild(titleRow);
+
+  const right = document.createElement('div'); right.className='row';
+  // actions
+  const btnDownload = document.createElement('button'); btnDownload.className='secondary'; btnDownload.textContent='Download';
+  btnDownload.addEventListener('click', ()=> downloadFile(file.id));
+  const btnMore = document.createElement('button'); btnMore.className='secondary'; btnMore.textContent='Manage';
+  btnMore.addEventListener('click', ()=> openManage(file.id));
+  right.appendChild(btnDownload);
+  right.appendChild(btnMore);
+
+  // if trash
+  if (file.deleted){
+    const btnRestore = document.createElement('button'); btnRestore.className='secondary'; btnRestore.textContent='Restore';
+    btnRestore.addEventListener('click', ()=> { file.deleted=false; file.deletedAt=null; FILES[file.id]=file; saveAll(); renderFiles(); logActivity(`${SESSION} restored ${file.name}`);});
+    const btnPurge = document.createElement('button'); btnPurge.className='danger'; btnPurge.textContent='Delete Permanently';
+    btnPurge.addEventListener('click', ()=> { delete FILES[file.id]; saveAll(); renderFiles(); logActivity(`${SESSION} permanently deleted ${file.name}`);});
+    right.appendChild(btnRestore);
+    right.appendChild(btnPurge);
+  } else {
+    // if owner or shared with edit perm
+    if (file.ownerEmail === SESSION || (file.acl && file.acl.some(a=>a.email===SESSION && (a.perm==='edit')))){
+      const btnRename = document.createElement('button'); btnRename.className='secondary'; btnRename.textContent='Rename';
+      btnRename.addEventListener('click', ()=>{
+        const newName = prompt('Rename file to:', file.name);
+        if (newName) { file.name = newName; FILES[file.id]=file; saveAll(); renderFiles(); logActivity(`${SESSION} renamed to ${newName}`); }
+      });
+      const btnDelete = document.createElement('button'); btnDelete.className='secondary'; btnDelete.textContent='Delete';
+      btnDelete.addEventListener('click', ()=> {
+        file.deleted = true; file.deletedAt = nowISO(); FILES[file.id]=file; saveAll(); renderFiles(); logActivity(`${SESSION} moved to trash: ${file.name}`);
+      });
+      right.appendChild(btnRename);
+      right.appendChild(btnDelete);
+    }
+    // share button visible
+    const btnShare = document.createElement('button'); btnShare.className='btn-link'; btnShare.textContent='Share';
+    btnShare.addEventListener('click', ()=> openShareModal(file.id));
+    right.appendChild(btnShare);
+    // versions button
+    const btnVer = document.createElement('button'); btnVer.className='secondary'; btnVer.textContent=`Versions (${file.versions.length})`;
+    btnVer.addEventListener('click', ()=> showVersions(file.id));
+    right.appendChild(btnVer);
+  }
+
+  div.appendChild(icon);
+  div.appendChild(meta);
+  div.appendChild(right);
+  fileList.appendChild(div);
+}
+
+/* -------- Uploading -------- */
+dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.style.borderColor='rgba(255,255,255,0.16)'; });
+dropzone.addEventListener('dragleave', ()=>{ dropzone.style.borderColor='rgba(255,255,255,0.04)'; });
+dropzone.addEventListener('drop', (e)=>{ e.preventDefault(); dropzone.style.borderColor='rgba(255,255,255,0.04)'; handleFiles(e.dataTransfer.files); });
+dropzone.addEventListener('click', ()=> fileinput.click());
+fileinput.addEventListener('change', ()=> handleFiles(fileinput.files));
+
+btnOpenUpload.addEventListener('click', ()=> { uploadSection.scrollIntoView({behavior:'smooth'}); });
+btnOpenFiles.addEventListener('click', ()=> { filesSection.scrollIntoView({behavior:'smooth'}); });
+btnOpenLog.addEventListener('click', ()=> { logSection.style.display = logSection.style.display === 'none' ? 'block' : 'none'; });
+
+async function handleFiles(list){
+  if (!SESSION) { alert('Please login first.'); return; }
+  const files = Array.from(list);
+  uploadingStatus.textContent = `Uploading ${files.length} file(s)...`;
+  for (const file of files){
+    await uploadSingleFile(file);
+  }
+  uploadingStatus.textContent = 'Upload complete';
+  setTimeout(()=> uploadingStatus.textContent='', 3000);
+  renderFiles();
+  renderStorage();
+}
+
+async function uploadSingleFile(file){
+  const reader = new FileReader();
+  const base64 = await new Promise((res,rej)=>{
+    reader.onload = ()=> res(reader.result.split(',')[1]);
+    reader.onerror = ()=> rej(reader.error);
+    reader.readAsDataURL(file);
+  });
+  const size = file.size;
+  // check storage
+  const acct = ACCOUNTS[SESSION];
+  if (acct.usedBytes + size > acct.allocBytes){
+    uploadingStatus.innerHTML = '<span style="color:orange;font-weight:600;">Upload blocked: storage full. Please upgrade plan (demo)</span>';
+    return;
+  }
+
+  // optionally encrypt using derived key from user's password hash (demo)
+  let enc = false, iv=null, ct=null;
+  if (optEncrypt.checked){
+    // derive a key from user's passwordHash (demo)
+    const passHash = ACCOUNTS[SESSION].passwordHash;
+    const key = await deriveKeyFromPassphrase(passHash);
+    // convert base64 to arraybuffer
+    const ab = base64ToAb(base64);
+    const res = await encryptBase64(ab, key);
+    enc = true; iv = res.iv; ct = res.ct;
+    // store ciphertext as base64
+  }
+
+  // file object
+  const fileId = uid('file');
+  const now = nowISO();
+  const fileObj = {
+    id: fileId,
+    name: file.name,
+    type: file.type || 'unknown',
+    size: size,
+    ownerEmail: SESSION,
+    folderId: null,
+    createdAt: now,
+    versions: [
+      { id: uid('v'), dataB64: enc ? ct : base64, iv: enc ? iv : null, createdAt: now, enc: enc, size: size, note: 'initial' }
+    ],
+    acl: [], // owner implicit
+    deleted: false,
+    deletedAt: null,
+    isFolder: false
+  };
+  FILES[fileId] = fileObj;
+  // update account usedBytes
+  ACCOUNTS[SESSION].usedBytes = (ACCOUNTS[SESSION].usedBytes || 0) + size;
+  saveAll();
+  logActivity(`${SESSION} uploaded ${file.name} (${bytesToReadable(size)})`);
+}
+
+/* -------- Download (decrypt on the fly) -------- */
+async function downloadFile(fileId){
+  const file = FILES[fileId];
+  if (!file) return alert('File not found.');
+  // check permission: owner or ACL with download/edit/view
+  if (file.ownerEmail !== SESSION && !(file.acl && file.acl.some(a=>a.email===SESSION && ['view','download','edit'].includes(a.perm)))){
+    return alert('You do not have permission to download this file.');
+  }
+  // get latest version
+  const v = file.versions[file.versions.length-1];
+  let dataBuf;
+  if (v.enc){
+    const key = await deriveKeyFromPassphrase(ACCOUNTS[file.ownerEmail].passwordHash);
+    try {
+      const plain = await decryptBase64(v.iv, v.dataB64, key);
+      dataBuf = plain;
+    } catch(e){
+      return alert('Failed to decrypt: owner password key mismatch (demo).');
+    }
+  } else {
+    dataBuf = base64ToAb(v.dataB64);
+  }
+  const blob = new Blob([dataBuf], {type: file.type || 'application/octet-stream'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download = file.name; document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(url); a.remove();
+  logActivity(`${SESSION} downloaded ${file.name}`);
+}
+
+/* -------- Manage modal / shares / versions -------- */
+let currentManageId = null;
+function openManage(fileId){
+  currentManageId = fileId;
+  const file = FILES[fileId];
+  const info = `Name: ${file.name}\nOwner: ${file.ownerEmail}\nCreated: ${new Date(file.createdAt).toLocaleString()}\nVersions: ${file.versions.length}\nDeleted: ${file.deleted ? 'Yes' : 'No'}`;
+  const action = prompt('Manage file (type: share / versions / acl / info / cancel):', 'info');
+  if (!action) return;
+  if (action === 'info') return alert(info);
+  if (action === 'versions') return showVersions(fileId);
+  if (action === 'share') return openShareModal(fileId);
+  if (action === 'acl') {
+    alert('ACL: ' + JSON.stringify(file.acl || []));
+    return;
+  }
+}
+
+/* Share modal */
+let shareTarget = null;
+function openShareModal(fileId){
+  shareTarget = fileId;
+  shareModal.classList.remove('hidden');
+  const f = FILES[fileId];
+  // create or reuse share token
+  // create share token string
+  const existing = Object.keys(SHARES).find(k=>SHARES[k].fileId===fileId);
+  let token;
+  if (existing) token = existing;
+  else { token = uid('share'); SHARES[token] = {fileId, perms: 'view', createdAt: nowISO()}; saveAll(); }
+  shareLink.textContent = window.location.origin + window.location.pathname + '?share=' + token;
+  aclList.textContent = (f.acl && f.acl.map(a=>`${a.email}:${a.perm}`).join(', ')) || 'none';
+}
+
+btnCloseShare.addEventListener('click', ()=> { shareModal.classList.add('hidden'); shareTarget = null; });
+btnAddCollab.addEventListener('click', ()=>{
+  if (!shareTarget) return;
+  const email = collabEmail.value.trim().toLowerCase();
+  const perm = sharePerm.value;
+  if (!email) return alert('Enter email');
+  // add to ACL
+  const f = FILES[shareTarget];
+  f.acl = f.acl || [];
+  // replace if exists
+  const idx = f.acl.findIndex(a=>a.email===email);
+  if (idx>=0) f.acl[idx].perm = perm; else f.acl.push({email, perm});
+  FILES[shareTarget]=f; saveAll();
+  aclList.textContent = f.acl.map(a=>`${a.email}:${a.perm}`).join(', ');
+  logActivity(`${SESSION} added collaborator ${email} (${perm}) to ${f.name}`);
+  alert('Collaborator added (demo). If they are not registered yet, they will show in shared view when they create an account and log in.');
+});
+
+/* Show versions */
+function showVersions(fileId){
+  const f = FILES[fileId];
+  const list = f.versions.map((v,i)=> `${i+1}. ${v.createdAt} • ${bytesToReadable(v.size)} • enc:${v.enc}`).join('\n');
+  const choice = prompt(`Versions for ${f.name}:\n${list}\n\naction: (restore N) / (info N) / cancel`, 'info 1');
+  if (!choice) return;
+  const parts = choice.split(' ');
+  if (parts[0] === 'restore' && parts[1]){
+    const idx = parseInt(parts[1]) -1;
+    if (idx>=0 && idx < f.versions.length){
+      // create a new version identical to selected (copy)
+      const v = f.versions[idx];
+      const newv = { id: uid('v'), dataB64: v.dataB64, iv: v.iv, createdAt: nowISO(), enc: v.enc, size: v.size, note: 'restored' };
+      f.versions.push(newv);
+      FILES[fileId]=f; saveAll(); renderFiles(); logActivity(`${SESSION} restored version ${idx+1} of ${f.name}`);
+      alert('Version restored (as new version).');
+    } else alert('Invalid index');
+  } else if (parts[0] === 'info' && parts[1]){
+    const idx = parseInt(parts[1]) -1;
+    if (idx>=0 && idx < f.versions.length){
+      const v = f.versions[idx];
+      alert(`Version ${idx+1}\nCreated: ${v.createdAt}\nEncrypted: ${v.enc}\nSize: ${bytesToReadable(v.size)}\nNote: ${v.note}`);
+    } else alert('Invalid index');
+  } else alert('Unknown action');
+}
+
+/* -------- Activity log rendering -------- */
+function renderActivity(){
+  activityLog.innerHTML = '';
+  ACTIVITY.slice(0,200).forEach(a=>{
+    const d = document.createElement('div');
+    d.innerHTML = `<div style="font-weight:600">${new Date(a.ts).toLocaleString()}</div><div class="small muted">${a.text}</div><hr style="border-color: rgba(255,255,255,0.02)"/>`;
+    activityLog.appendChild(d);
+  });
+}
+
+/* -------- Search / filter events -------- */
+viewFilter.addEventListener('change', renderFiles);
+searchBox.addEventListener('input', renderFiles);
+
+/* -------- New folder (simple) -------- */
+btnNewFolder.addEventListener('click', ()=>{
+  if (!SESSION) return alert('Login first');
+  const name = prompt('Folder name:','New folder');
+  if (!name) return;
+  const id = uid('file');
+  const now = nowISO();
+  FILES[id] = { id, name, type: 'folder', size:0, ownerEmail: SESSION, folderId: null, createdAt: now, versions:[], acl:[], deleted:false, deletedAt:null, isFolder:true };
+  saveAll();
+  logActivity(`${SESSION} created folder ${name}`);
+  renderFiles();
+});
+
+/* -------- initial seed for demo accounts (optional) -------- */
+(function seedDemo(){
+  if (!ACCOUNTS['alice@example.com']){
+    (async ()=>{
+      const pass = 'pass1234';
+      const hash = await hashHex(pass);
+      ACCOUNTS['alice@example.com'] = { name:'Alice Demo', email:'alice@example.com', passwordHash:hash, verified:true, role:'user', allocBytes: 200*1024*1024, usedBytes:0 };
+      const pass2 = 'adminpass';
+      const hash2 = await hashHex(pass2);
+      ACCOUNTS['admin@example.com'] = { name:'Admin Demo', email:'admin@example.com', passwordHash:hash2, verified:true, role:'admin', allocBytes: 5*1024*1024*1024, usedBytes:0 };
+      saveAll();
+      logActivity('Demo accounts seeded (alice, admin).');
+    })();
+  }
+})();
+
+/* On load */
+startUI();
+
+</script>
+</body>
+</html>

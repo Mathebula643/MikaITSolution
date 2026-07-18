@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Employee Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="script.js"></script>
+</head>
+<body onload="checkEmployee(); loadEmployeeLeaves();">
+
+<header>
+    <h1>Employee Dashboard</h1>
+    <nav>
+        <a href="employee.html">Apply Leave</a>
+        <a href="index.html" onclick="logout()">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+
+<h2>Apply for Leave</h2>
+
+<select id="leaveType">
+    <option value="">Select Leave Type</option>
+    <option>Annual Leave</option>
+    <option>Sick Leave</option>
+</select>
+
+<input type="date" id="startDate">
+<input type="date" id="endDate">
+<textarea id="reason" placeholder="Reason"></textarea>
+
+<button onclick="applyLeave()">Submit Leave</button>
+
+<h2>My Leave Requests</h2>
+<table>
+<tr><th>Type</th><th>Dates</th><th>Status</th></tr>
+<tbody id="employeeTable"></tbody>
+</table>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Manager Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="script.js"></script>
+</head>
+<body onload="checkManager(); loadManagerLeaves();">
+
+<header>
+    <h1>Manager Dashboard</h1>
+    <nav>
+        <a href="manager.html">Approve Leave</a>
+        <a href="index.html" onclick="logout()">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+
+<h2>Pending Leave Requests</h2>
+
+<table>
+<tr><th>Employee</th><th>Type</th><th>Dates</th><th>Action</th></tr>
+<tbody id="managerTable"></tbody>
+</table>
+
+</div>
+</body>
+</html>

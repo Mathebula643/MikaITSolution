@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Library - NCV IT</title>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f9;}
+    header {background: #2c3e50; color: #fff; padding: 20px; text-align: center;}
+    nav {background: #34495e; display: flex; justify-content: center; flex-wrap: wrap;}
+    nav button {background: #34495e; color: #fff; border: none; padding: 10px 15px; cursor: pointer;}
+    nav button:hover {background: #2c3e50;}
+    #searchBar {margin: 20px auto; display: flex; justify-content: center; gap: 10px;}
+    #searchInput, #sortSelect {padding: 10px; border-radius: 5px; border: 1px solid #ccc;}
+    #searchInput {width: 50%;}
+    .container {display: flex; flex-wrap: wrap; justify-content: center; margin: 20px;}
+    .book {background: #fff; margin: 10px; padding: 15px; border-radius: 10px; width: 200px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+    .book img {width: 100%; height: 250px; object-fit: cover; border-radius: 5px;}
+    .book h3 {font-size: 16px; margin: 10px 0 5px;}
+    .book p {font-size: 14px; color: #555;}
+    .book a {text-decoration: none; color: #3498db; font-weight: bold;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Online Library</h1>
+    <p>Explore books across multiple categories</p>
+  </header>
+
+  <nav>
+    <button onclick="showCategory('Information Technology')">Information Technology</button>
+    <button onclick="showCategory('Business Studies')">Business Studies</button>
+    <button onclick="showCategory('Engineering')">Engineering</button>
+    <button onclick="showCategory('Literature')">Literature</button>
+  </nav>
+
+  <div id="searchBar">
+    <input type="text" id="searchInput" placeholder="Search for books..." onkeyup="searchBooks()">
+    <select id="sortSelect" onchange="applySort()">
+      <option value="">Sort By</option>
+      <option value="title">Title (A-Z)</option>
+      <option value="author">Author (A-Z)</option>
+    </select>
+  </div>
+
+  <div id="bookContainer" class="container"></div>
+
+  <script>
+    const books = {
+      "Information Technology": [
+        {title: "Computer Fundamentals", author: "P.K. Sinha", cover: "https://covers.openlibrary.org/b/id/8231856-L.jpg", description: "Introduction to computer basics and IT concepts.", link: "https://openlibrary.org/works/OL15803418W"},
+        {title: "Database System Concepts", author: "Abraham Silberschatz", cover: "https://covers.openlibrary.org/b/id/10548267-L.jpg", description: "Covers fundamentals of database systems.", link: "https://openlibrary.org/works/OL46558W"},
+        {title: "Computer Networking", author: "Andrew S. Tanenbaum", cover: "https://covers.openlibrary.org/b/id/10492969-L.jpg", description: "Comprehensive guide on computer networks.", link: "https://openlibrary.org/works/OL20531W"},
+        {title: "Learning Python", author: "Mark Lutz", cover: "https://covers.openlibrary.org/b/id/8225631-L.jpg", description: "A complete resource to learn Python programming.", link: "https://openlibrary.org/works/OL15297772W"},
+        {title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell", cover: "https://covers.openlibrary.org/b/id/10693228-L.jpg", description: "Leading book on AI fundamentals and applications.", link: "https://openlibrary.org/works/OL362427W"},
+        {title: "Operating System Concepts", author: "Abraham Silberschatz", cover: "https://covers.openlibrary.org/b/id/10548263-L.jpg", description: "Standard text on operating system principles.", link: "https://openlibrary.org/works/OL46557W"},
+        {title: "Web Development with HTML, CSS, and JavaScript", author: "John Duckett", cover: "https://covers.openlibrary.org/b/id/7322161-L.jpg", description: "Hands-on guide to web development.", link: "https://openlibrary.org/works/OL17395020W"}
+      ],
+      "Business Studies": [
+        {title: "Principles of Marketing", author: "Philip Kotler", cover: "https://covers.openlibrary.org/b/id/10544070-L.jpg", description: "Covers core marketing principles.", link: "https://openlibrary.org/works/OL15759677W"},
+        {title: "Business Management", author: "James Stoner", cover: "https://covers.openlibrary.org/b/id/10549755-L.jpg", description: "Classic text on business management.", link: "https://openlibrary.org/works/OL171018W"},
+        {title: "The Lean Startup", author: "Eric Ries", cover: "https://covers.openlibrary.org/b/id/7278841-L.jpg", description: "Guide for modern startups and innovation.", link: "https://openlibrary.org/works/OL15297284W"},
+        {title: "Good to Great", author: "Jim Collins", cover: "https://covers.openlibrary.org/b/id/10548858-L.jpg", description: "Study on how companies transition from good to great.", link: "https://openlibrary.org/works/OL15164137W"},
+        {title: "The Art of War", author: "Sun Tzu", cover: "https://covers.openlibrary.org/b/id/10549393-L.jpg", description: "Ancient strategies applied to business.", link: "https://openlibrary.org/works/OL15807855W"},
+        {title: "Financial Management", author: "Eugene F. Brigham", cover: "https://covers.openlibrary.org/b/id/10548561-L.jpg", description: "Textbook on financial decision-making.", link: "https://openlibrary.org/works/OL16815967W"},
+        {title: "Competitive Strategy", author: "Michael E. Porter", cover: "https://covers.openlibrary.org/b/id/10548264-L.jpg", description: "Classic book on business strategy.", link: "https://openlibrary.org/works/OL46560W"}
+      ],
+      "Engineering": [
+        {title: "Engineering Mechanics", author: "R.C. Hibbeler", cover: "https://covers.openlibrary.org/b/id/10549249-L.jpg", description: "Detailed study of mechanics in engineering.", link: "https://openlibrary.org/works/OL17061313W"},
+        {title: "Civil Engineering Materials", author: "Shan Somayaji", cover: "https://covers.openlibrary.org/b/id/10548271-L.jpg", description: "Focuses on materials used in civil engineering.", link: "https://openlibrary.org/works/OL17060696W"},
+        {title: "Introduction to Electrical Engineering", author: "Mulukutla S. Sarma", cover: "https://covers.openlibrary.org/b/id/10549762-L.jpg", description: "Core principles of electrical engineering.", link: "https://openlibrary.org/works/OL17060686W"},
+        {title: "Mechanical Engineering Design", author: "J.E. Shigley", cover: "https://covers.openlibrary.org/b/id/10548569-L.jpg", description: "Covers fundamental design principles.", link: "https://openlibrary.org/works/OL17060187W"},
+        {title: "Structural Analysis", author: "R.C. Hibbeler", cover: "https://covers.openlibrary.org/b/id/10548672-L.jpg", description: "Theory and application of structural analysis.", link: "https://openlibrary.org/works/OL17060707W"},
+        {title: "Thermodynamics: An Engineering Approach", author: "Yunus A. Cengel", cover: "https://covers.openlibrary.org/b/id/10548866-L.jpg", description: "Thermodynamics concepts in engineering.", link: "https://openlibrary.org/works/OL17060894W"},
+        {title: "Fluid Mechanics", author: "Frank M. White", cover: "https://covers.openlibrary.org/b/id/10549763-L.jpg", description: "Core concepts in fluid dynamics.", link: "https://openlibrary.org/works/OL17060882W"}
+      ],
+      "Literature": [
+        {title: "Hamlet", author: "William Shakespeare", cover: "https://covers.openlibrary.org/b/id/8228691-L.jpg", description: "Classic tragedy by Shakespeare.", link: "https://openlibrary.org/works/OL362427W"},
+        {title: "Pride and Prejudice", author: "Jane Austen", cover: "https://covers.openlibrary.org/b/id/8231994-L.jpg", description: "Romantic novel of manners.", link: "https://openlibrary.org/works/OL362406W"},
+        {title: "1984", author: "George Orwell", cover: "https://covers.openlibrary.org/b/id/7222246-L.jpg", description: "Dystopian classic novel.", link: "https://openlibrary.org/works/OL734362W"},
+        {title: "The Great Gatsby", author: "F. Scott Fitzgerald", cover: "https://covers.openlibrary.org/b/id/8225421-L.jpg", description: "American classic exploring themes of wealth.", link: "https://openlibrary.org/works/OL27619W"},
+        {title: "Moby-Dick", author: "Herman Melville", cover: "https://covers.openlibrary.org/b/id/5552226-L.jpg", description: "Epic sea story of Captain Ahab.", link: "https://openlibrary.org/works/OL15618W"},
+        {title: "To Kill a Mockingbird", author: "Harper Lee", cover: "https://covers.openlibrary.org/b/id/8228692-L.jpg", description: "Pulitzer-winning novel on race and justice.", link: "https://openlibrary.org/works/OL82563W"},
+        {title: "Don Quixote", author: "Miguel de Cervantes", cover: "https://covers.openlibrary.org/b/id/8231851-L.jpg", description: "One of the greatest works of Spanish literature.", link: "https://openlibrary.org/works/OL27448W"}
+      ]
+    };
+
+    let currentCategory = 'Information Technology';
+
+    function showCategory(category) {
+      currentCategory = category;
+      renderBooks(books[category]);
+    }
+
+    function renderBooks(bookArray) {
+      const container = document.getElementById("bookContainer");
+      container.innerHTML = "";
+      bookArray.forEach(book => {
+        container.innerHTML += `
+          <div class="book">
+            <img src="${book.cover}" alt="${book.title}">
+            <h3>${book.title}</h3>
+            <p><strong>Author:</strong> ${book.author}</p>
+            <p>${book.description}</p>
+            <a href="${book.link}" target="_blank">Read More</a>
+          </div>
+        `;
+      });
+    }
+
+    function searchBooks() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const results = [];
+      for (let category in books) {
+        books[category].forEach(book => {
+          if (book.title.toLowerCase().includes(query) || book.author.toLowerCase().includes(query) || book.description.toLowerCase().includes(query)) {
+            results.push(book);
+          }
+        });
+      }
+      renderBooks(results);
+    }
+
+    function applySort() {
+      const sortValue = document.getElementById("sortSelect").value;
+      let sortedBooks = [...books[currentCategory]];
+
+      if (sortValue === "title") {
+        sortedBooks.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortValue === "author") {
+        sortedBooks.sort((a, b) => a.author.localeCompare(b.author));
+      }
+      renderBooks(sortedBooks);
+    }
+
+    // Default view
+    showCategory('Information Technology');
+  </script>
+</body>
+</html>

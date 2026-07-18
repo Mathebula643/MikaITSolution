@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Library</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    .search-bar {
+      text-align: center;
+      margin: 20px;
+    }
+    .search-bar input {
+      width: 50%;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .category {
+      margin: 20px;
+    }
+    .category h2 {
+      border-bottom: 2px solid #2c3e50;
+      padding-bottom: 5px;
+    }
+    .sort-options {
+      margin-bottom: 15px;
+    }
+    .books {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .book {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      width: 200px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .book img {
+      max-width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 3px;
+    }
+    .book h3 {
+      font-size: 16px;
+      margin: 10px 0 5px 0;
+    }
+    .book p {
+      font-size: 14px;
+      color: #555;
+    }
+    .book a {
+      display: inline-block;
+      margin-top: 5px;
+      color: #2980b9;
+      text-decoration: none;
+    }
+    footer {
+      background: #2980b9;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      margin-top: 30px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Online Library</h1>
+    <p>Your gateway to knowledge</p>
+  </header>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search for books..." onkeyup="searchBooks()" />
+  </div>
+
+  <div id="library"></div>
+
+  <footer>
+    Mathebula TA & Molepo MM
+  </footer>
+
+  <script>
+    const libraryData = {
+      "Information Technology": [
+        { title: "Database Systems: The Complete Book", author: "Hector Garcia-Molina", year: 2008, description: "Comprehensive introduction to database models, query languages, and system implementation.", cover: "https://covers.openlibrary.org/b/id/8231996-L.jpg", link: "https://archive.org/details/databasesystemsco00garc" },
+        { title: "Computer Networking: Principles, Protocols and Practice", author: "Olivier Bonaventure", year: 2011, description: "Explains computer networks including TCP/IP, routing, and congestion control.", cover: "https://covers.openlibrary.org/b/id/8319253-L.jpg", link: "https://inl.info.ucl.ac.be/CNP3" },
+        { title: "Learning Python", author: "Mark Lutz", year: 2013, description: "Hands-on programming with Python from basics to advanced concepts.", cover: "https://covers.openlibrary.org/b/id/8155421-L.jpg", link: "https://archive.org/details/learningpython00lutz" },
+        { title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell, Peter Norvig", year: 2010, description: "AI fundamentals including machine learning, perception, and robotics.", cover: "https://covers.openlibrary.org/b/id/240726-L.jpg", link: "https://archive.org/details/artificialintell00russ_771" },
+        { title: "Introduction to Algorithms", author: "Thomas H. Cormen", year: 2009, description: "Widely used text on algorithm design and analysis.", cover: "https://covers.openlibrary.org/b/id/8235081-L.jpg", link: "https://archive.org/details/introductiontoalgorithms3rdedition" },
+        { title: "Web Development and Design Foundations with HTML5", author: "Terry Felke-Morris", year: 2018, description: "Guide to building websites using HTML5, CSS, and JavaScript.", cover: "https://covers.openlibrary.org/b/id/9871387-L.jpg", link: "https://archive.org/details/webdevelopmentanddesignfoundationswithhtml5" }
+      ],
+      "Business Studies": [
+        { title: "Principles of Marketing", author: "Philip Kotler", year: 2012, description: "Key marketing strategies for product positioning and promotion.", cover: "https://covers.openlibrary.org/b/id/6979862-L.jpg", link: "https://archive.org/details/principlesofmark00kotl" },
+        { title: "Financial Accounting", author: "Jerry J. Weygandt", year: 2011, description: "Introduces accounting cycle, financial statements, and reporting.", cover: "https://covers.openlibrary.org/b/id/8237546-L.jpg", link: "https://archive.org/details/financialaccounti00weyg" },
+        { title: "Organizational Behavior", author: "Stephen P. Robbins", year: 2013, description: "Explains employee motivation, leadership, and workplace culture.", cover: "https://covers.openlibrary.org/b/id/8236325-L.jpg", link: "https://archive.org/details/organizationalbehav00robi" },
+        { title: "Economics", author: "Paul Krugman", year: 2015, description: "Fundamentals of microeconomics and macroeconomics.", cover: "https://covers.openlibrary.org/b/id/7991962-L.jpg", link: "https://archive.org/details/economics00paul" },
+        { title: "Business Ethics: Ethical Decision Making & Cases", author: "O.C. Ferrell", year: 2012, description: "Discusses ethics in real business case studies.", cover: "https://covers.openlibrary.org/b/id/8785571-L.jpg", link: "https://archive.org/details/businessethicseth00ferr" },
+        { title: "Strategic Management: Concepts and Cases", author: "Fred R. David", year: 2013, description: "Concepts for formulating, implementing, and evaluating strategies.", cover: "https://covers.openlibrary.org/b/id/8231465-L.jpg", link: "https://archive.org/details/strategicmanagem00fred" }
+      ],
+      "Engineering": [
+        { title: "Engineering Mechanics: Dynamics", author: "J.L. Meriam", year: 2012, description: "Applies Newtonian mechanics to engineering problems.", cover: "https://covers.openlibrary.org/b/id/8783501-L.jpg", link: "https://archive.org/details/engineeringmechani00meri" },
+        { title: "Thermodynamics: An Engineering Approach", author: "Yunus Çengel", year: 2011, description: "Explains thermodynamics principles for engineers.", cover: "https://covers.openlibrary.org/b/id/8236444-L.jpg", link: "https://archive.org/details/thermodynamicsane00ceng" },
+        { title: "Electrical Engineering: Principles & Applications", author: "Allan R. Hambley", year: 2013, description: "Basics of electrical circuits, signals, and electronics.", cover: "https://covers.openlibrary.org/b/id/8235453-L.jpg", link: "https://archive.org/details/electricalengineer00hamb" },
+        { title: "Civil Engineering Reference Manual", author: "Michael R. Lindeburg", year: 2015, description: "Comprehensive PE exam reference manual.", cover: "https://covers.openlibrary.org/b/id/8239434-L.jpg", link: "https://archive.org/details/civilengineeringrefmanual" },
+        { title: "Materials Science and Engineering: An Introduction", author: "William D. Callister", year: 2014, description: "Discusses material properties, structure, and applications.", cover: "https://covers.openlibrary.org/b/id/8784951-L.jpg", link: "https://archive.org/details/materialsscienceandengineering" },
+        { title: "Control Systems Engineering", author: "Norman S. Nise", year: 2010, description: "Fundamentals of feedback control systems.", cover: "https://covers.openlibrary.org/b/id/8237421-L.jpg", link: "https://archive.org/details/controlsystemsengineering" }
+      ],
+      "Literature": [
+        { title: "Pride and Prejudice", author: "Jane Austen", year: 1813, description: "A social commentary on manners, marriage, and morality in 19th-century England.", cover: "https://covers.openlibrary.org/b/id/7984916-L.jpg", link: "https://archive.org/details/prideprejudice00aust_1" },
+        { title: "Hamlet", author: "William Shakespeare", year: 1603, description: "Tragedy exploring revenge, madness, and betrayal in Denmark.", cover: "https://covers.openlibrary.org/b/id/8228691-L.jpg", link: "https://archive.org/details/hamletprinceofdenm00shak" },
+        { title: "Great Expectations", author: "Charles Dickens", year: 1861, description: "The journey of Pip from poverty to wealth and self-discovery.", cover: "https://covers.openlibrary.org/b/id/8231998-L.jpg", link: "https://archive.org/details/greatexpectation00dick_0" },
+        { title: "Moby Dick", author: "Herman Melville", year: 1851, description: "Captain Ahab’s obsession with hunting the white whale.", cover: "https://covers.openlibrary.org/b/id/555106-L.jpg", link: "https://archive.org/details/mobydick00herm" },
+        { title: "War and Peace", author: "Leo Tolstoy", year: 1869, description: "Epic novel about Russia during the Napoleonic wars.", cover: "https://covers.openlibrary.org/b/id/8234985-L.jpg", link: "https://archive.org/details/warandpeace01tols" },
+        { title: "The Great Gatsby", author: "F. Scott Fitzgerald", year: 1925, description: "Critique of the American Dream set in the Jazz Age.", cover: "https://covers.openlibrary.org/b/id/8225631-L.jpg", link: "https://archive.org/details/greatgatsby00fitz_0" }
+      ]
+    };
+
+    function displayLibrary() {
+      const libraryDiv = document.getElementById("library");
+      libraryDiv.innerHTML = "";
+
+      for (let category in libraryData) {
+        const section = document.createElement("div");
+        section.className = "category";
+
+        const header = document.createElement("h2");
+        header.textContent = category;
+        section.appendChild(header);
+
+        const sortSelect = document.createElement("select");
+        sortSelect.className = "sort-options";
+        sortSelect.innerHTML = `
+          <option value="title">Sort by Title</option>
+          <option value="author">Sort by Author</option>
+        `;
+        sortSelect.onchange = () => sortBooks(category, sortSelect.value);
+        section.appendChild(sortSelect);
+
+        const booksDiv = document.createElement("div");
+        booksDiv.className = "books";
+        booksDiv.id = `books-${category}`;
+
+        libraryData[category].forEach(book => {
+          const bookDiv = createBookDiv(book);
+          booksDiv.appendChild(bookDiv);
+        });
+
+        section.appendChild(booksDiv);
+        libraryDiv.appendChild(section);
+      }
+    }
+
+    function createBookDiv(book) {
+      const div = document.createElement("div");
+      div.className = "book";
+      div.innerHTML = `
+        <img src="${book.cover}" alt="${book.title}" />
+        <h3>${book.title}</h3>
+        <p><strong>Author:</strong> ${book.author}</p>
+        <p><strong>Year:</strong> ${book.year}</p>
+        <p>${book.description}</p>
+        <a href="${book.link}" target="_blank">Read More</a>
+      `;
+      return div;
+    }
+
+    function searchBooks() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      document.querySelectorAll(".book").forEach(book => {
+        const text = book.innerText.toLowerCase();
+        book.style.display = text.includes(query) ? "block" : "none";
+      });
+    }
+
+    function sortBooks(category, criteria) {
+      libraryData[category].sort((a, b) => a[criteria].localeCompare(b[criteria]));
+      const booksDiv = document.getElementById(`books-${category}`);
+      booksDiv.innerHTML = "";
+      libraryData[category].forEach(book => {
+        const bookDiv = createBookDiv(book);
+        booksDiv.appendChild(bookDiv);
+      });
+    }
+
+    displayLibrary();
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenShelf Online Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <header class="bg-blue-700 text-white p-6 text-center text-3xl font-bold">OpenShelf Online Library</header>
+  <main class="p-4 max-w-6xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+      <input id="searchInput" type="text" placeholder="Search books..." class="border rounded p-2 w-full md:w-1/3 mb-2 md:mb-0" />
+      <select id="categoryFilter" class="border rounded p-2 w-full md:w-1/4 mb-2 md:mb-0">
+        <option value="">All Categories</option>
+      </select>
+      <select id="sortSelect" class="border rounded p-2 w-full md:w-1/4">
+        <option value="title">Sort by Title</option>
+        <option value="author">Sort by Author</option>
+        <option value="year">Sort by Year</option>
+      </select>
+    </div>
+    <div id="bookGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+  </main>
+
+  <div id="bookModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded shadow-lg w-11/12 md:w-1/2 p-4 relative">
+      <button id="closeModal" class="absolute top-2 right-2 text-gray-700 font-bold">X</button>
+      <h2 id="modalTitle" class="text-2xl font-bold mb-2"></h2>
+      <p id="modalAuthor" class="mb-2"></p>
+      <p id="modalYear" class="mb-2"></p>
+      <p id="modalDescription" class="mb-4"></p>
+      <a id="modalLink" href="#" target="_blank" class="text-blue-600 underline">Read / Download</a>
+    </div>
+  </div>
+
+  <script>
+    const books = [
+      // Sample Public-Domain/Placeholder Books
+      {title: "Pride and Prejudice", author: "Jane Austen", year: 1813, category: "Fiction", description: "Classic romantic novel.", link: "https://www.gutenberg.org/ebooks/1342"},
+      {title: "Moby-Dick", author: "Herman Melville", year: 1851, category: "Fiction", description: "Epic tale of a sea captain's obsession.", link: "https://www.gutenberg.org/ebooks/2701"},
+      {title: "The Art of War", author: "Sun Tzu", year: "5th Century BC", category: "Philosophy", description: "Ancient Chinese military treatise.", link: "https://www.gutenberg.org/ebooks/132"},
+      // IT Category Books
+      {title: "Systems Analysis Fundamentals", author: "NCV Resource", year: 2020, category: "IT", description: "Introduction to systems analysis principles.", link: "#"},
+      {title: "Computer Programming Basics", author: "NCV Resource", year: 2020, category: "IT", description: "Core programming concepts in NCV curriculum.", link: "#"},
+      {title: "Hardware & Software Essentials", author: "NCV Resource", year: 2020, category: "IT", description: "Overview of computer hardware and software.", link: "#"},
+      {title: "Computer Literacy 101", author: "NCV Resource", year: 2020, category: "IT", description: "Basic computer literacy skills.", link: "#"},
+      {title: "Database Management", author: "NCV Resource", year: 2020, category: "IT", description: "Understanding relational databases.", link: "#"},
+      {title: "Networking Essentials", author: "NCV Resource", year: 2020, category: "IT", description: "Basics of computer networks.", link: "#"},
+      {title: "Cybersecurity Fundamentals", author: "NCV Resource", year: 2020, category: "IT", description: "Introduction to information security.", link: "#"},
+      {title: "Web Development Basics", author: "NCV Resource", year: 2020, category: "IT", description: "HTML, CSS, and JavaScript for beginners.", link: "#"},
+      {title: "Operating Systems Concepts", author: "NCV Resource", year: 2020, category: "IT", description: "Learn how OS manages hardware and software.", link: "#"},
+      {title: "Software Engineering", author: "NCV Resource", year: 2020, category: "IT", description: "Software development life cycle explained.", link: "#"},
+      {title: "Cloud Computing Overview", author: "NCV Resource", year: 2020, category: "IT", description: "Understanding cloud technology.", link: "#"}
+    ];
+
+    const bookGrid = document.getElementById('bookGrid');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+
+    function populateCategories() {
+      const categories = [...new Set(books.map(b => b.category))];
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        categoryFilter.appendChild(opt);
+      });
+    }
+
+    function renderBooks() {
+      bookGrid.innerHTML = '';
+      let filtered = books.filter(b => {
+        const matchesCategory = categoryFilter.value === '' || b.category === categoryFilter.value;
+        const matchesSearch = b.title.toLowerCase().includes(searchInput.value.toLowerCase()) ||
+                              b.author.toLowerCase().includes(searchInput.value.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+      filtered.sort((a,b) => {
+        const key = sortSelect.value;
+        if (key === 'year') return (a.year+" ").localeCompare(b.year+" ");
+        return a[key].localeCompare(b[key]);
+      });
+      filtered.forEach(b => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded shadow p-4 cursor-pointer hover:shadow-lg';
+        card.innerHTML = `<h3 class="text-xl font-semibold mb-2">${b.title}</h3><p class="text-sm text-gray-700">${b.author}</p><p class="text-sm text-gray-500">${b.category}</p>`;
+        card.addEventListener('click', () => openModal(b));
+        bookGrid.appendChild(card);
+      });
+    }
+
+    function openModal(book) {
+      document.getElementById('modalTitle').textContent = book.title;
+      document.getElementById('modalAuthor').textContent = `Author: ${book.author}`;
+      document.getElementById('modalYear').textContent = `Year: ${book.year}`;
+      document.getElementById('modalDescription').textContent = book.description;
+      document.getElementById('modalLink').href = book.link;
+      document.getElementById('bookModal').classList.remove('hidden');
+    }
+
+    document.getElementById('closeModal').addEventListener('click', () => {
+      document.getElementById('bookModal').classList.add('hidden');
+    });
+
+    searchInput.addEventListener('input', renderBooks);
+    categoryFilter.addEventListener('change', renderBooks);
+    sortSelect.addEventListener('change', renderBooks);
+
+    populateCategories();
+    renderBooks();
+  </script>
+</body>
+</html>

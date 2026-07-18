@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cloud Storage Functional Process — Demo</title>
+  <style>
+    /* --------------------------
+       Simple modern CSS (no frameworks)
+       -------------------------- */
+    :root{
+      --bg: #0f1724;
+      --panel: #0b1220;
+      --accent: #6ee7b7;
+      --muted: #94a3b8;
+      --glass: rgba(255,255,255,0.04);
+      --danger: #ff6b6b;
+      --success: #22c55e;
+      --card-shadow: 0 6px 20px rgba(2,6,23,0.6);
+      --radius: 12px;
+      --max-width: 1100px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#071025 0%, #071324 60%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .app{
+      width:100%;
+      max-width:var(--max-width);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:16px;
+      padding:20px;
+      box-shadow: var(--card-shadow);
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+      min-height: 80vh;
+    }
+
+    /* Sidebar */
+    .sidebar{
+      background:var(--panel);
+      border-radius:12px;
+      padding:16px;
+      height:calc(80vh - 52px);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-width:250px;
+      overflow:auto;
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:48px;height:48px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent), #60a5fa);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#07203a;
+      box-shadow:0 6px 18px rgba(12,28,40,0.5);
+    }
+    h1{font-size:1.05rem;margin:0}
+    p.small{margin:0;color:var(--muted);font-size:0.85rem}
+
+    .nav{display:flex;flex-direction:column;gap:6px;padding-top:8px}
+    .nav button{
+      background:transparent;border:0;color:inherit;text-align:left;padding:10px;border-radius:8px;
+      cursor:pointer;font-weight:600;font-size:0.95rem;
+    }
+    .nav button.active{background:var(--glass)}
+    .side-section{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0));padding:12px;border-radius:10px}
+    .stat{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .meter {background:rgba(255,255,255,0.04);height:14px;border-radius:8px;overflow:hidden;margin-top:8px}
+    .meter > div{height:100%;background:linear-gradient(90deg,var(--accent),#60a5fa)}
+
+    .small-muted {font-size:0.82rem;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .btn{background:linear-gradient(90deg,#2dd4bf,#60a5fa);border:0;padding:8px 12px;border-radius:10px;color:#042027;font-weight:700;cursor:pointer}
+
+    /* Main content */
+    .main{
+      display:flex;flex-direction:column;gap:14px;padding:14px;
+      height:calc(80vh - 52px); overflow:auto;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:14px;border-radius:12px;
+      box-shadow: 0 4px 14px rgba(2,6,23,0.45);
+    }
+    .grid-2{display:grid;grid-template-columns:1fr 320px;gap:12px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .search{flex:1;margin:0 12px}
+    .search input{width:100%;padding:8px 10px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:inherit}
+
+    /* File area */
+    .upload-area{
+      border:2px dashed rgba(255,255,255,0.04);padding:18px;border-radius:10px;text-align:center;
+      transition:background .18s, border-color .18s;
+    }
+    .upload-area.dragover{background:rgba(110,231,183,0.04);border-color:rgba(110,231,183,0.6)}
+    .files-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+    .file-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px}
+    .file-row:hover{background:rgba(255,255,255,0.02)}
+    .file-meta{display:flex;flex-direction:column}
+    .file-actions{margin-left:auto;display:flex;gap:8px}
+
+    .tag{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03);font-weight:600;font-size:0.8rem}
+
+    /* modal */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;
+    }
+    .modal{
+      width:720px;max-width:96%;background:linear-gradient(180deg,#071026,#061425);border-radius:12px;padding:14px;
+      box-shadow:0 20px 60px rgba(2,6,23,0.7);
+    }
+
+    label{display:block;margin-bottom:6px;font-size:0.85rem;color:var(--muted)}
+    input,select,textarea{width:100%;padding:10px;border-radius:8px;border:0;background:rgba(255,255,255,0.03);color:inherit}
+    .row{display:flex;gap:10px}
+    .row > *{flex:1}
+
+    .log{max-height:200px;overflow:auto;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:0.9rem}
+    .muted-2{color:#8aa2b8;font-size:0.86rem}
+
+    footer{display:flex;justify-content:space-between;align-items:center;padding-top:8px;color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr; padding:12px}
+      .sidebar{height:auto;order:2}
+      .main{order:1}
+      .grid-2{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">CS</div>
+        <div>
+          <h1>CloudSim</h1>
+          <p class="small muted">Cloud Storage Functional Process — Demo</p>
+        </div>
+      </div>
+
+      <div id="auth-area" class="side-section">
+        <!-- dynamic: show login/register or user info -->
+      </div>
+
+      <div class="side-section">
+        <div class="stat"><div class="small-muted">Storage used</div><div id="storage-text">0 / 5 GB</div></div>
+        <div class="meter" title="storage usage">
+          <div id="storage-bar" style="width:0%"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="uploadBtn">Upload</button>
+          <button class="btn" id="newFolderBtn" style="background:rgba(255,255,255,0.04);color:var(--accent)">New Folder</button>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="small-muted">Views</div>
+          <div class="muted">Sort</div>
+        </div>
+        <div class="nav" style="margin-top:8px">
+          <button class="active" data-view="all">All Files</button>
+          <button data-view="my">My Files</button>
+          <button data-view="shared">Shared With Me</button>
+          <button data-view="trash">Trash</button>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="small-muted">Activity Log</div>
+        <div class="log" id="activityLog" aria-live="polite"></div>
+      </div>
+
+      <footer>
+        <div class="small-muted">Demo — client-only</div>
+        <div class="muted">v1.0</div>
+      </footer>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- Top / Search -->
+      <div class="card topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="tag" id="current-user-tag">Guest</div>
+          <div class="search"><input id="searchInput" placeholder="Search files, folders, users..." /></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="small-muted" id="session-status">Not signed in</div>
+          <button id="logoutBtn" class="btn" style="display:none;background:linear-gradient(90deg,#fb7185,#f97316)">Logout</button>
+        </div>
+      </div>
+
+      <!-- main panels -->
+      <div class="grid-2">
+        <section class="card" style="min-height:340px">
+          <h3 style="margin:0 0 8px 0">🔄 Cloud Storage Functional Process</h3>
+          <p class="muted-2">This interactive demo simulates the steps from registration to logout, including uploading, sharing, versioning, and storage monitoring.</p>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn" id="showProcessBtn">Show Process Flow</button>
+            <button class="btn" id="simulateUploadBtn">Simulate Upload Sample</button>
+            <button class="btn" id="clearDataBtn" style="background:rgba(255,255,255,0.04)">Reset Demo</button>
+          </div>
+
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+
+          <div id="processFlow" style="display:grid;gap:8px">
+            <!-- Flow items will be injected -->
+          </div>
+        </section>
+
+        <!-- right column: upload + file list -->
+        <aside class="card">
+          <div class="upload-area" id="uploadArea">
+            <p style="margin:0;font-weight:700">Drag & Drop files here</p>
+            <p class="small-muted" style="margin:6px 0 10px 0">or use the Upload button</p>
+            <input id="fileInput" type="file" multiple style="display:none" />
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button class="btn" id="internalUploadBtn">Select Files</button>
+              <button id="linkShareBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px">Share</button>
+            </div>
+          </div>
+
+          <div class="files-list" id="filesList" style="margin-top:12px">
+            <!-- file rows -->
+          </div>
+
+        </aside>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">Storage & Subscription</h3>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1">
+            <div class="small-muted">Plan: <strong id="planName">Free</strong></div>
+            <div class="muted-2" id="planDesc">5 GB included. Upgrade to Pro for more space and backup options.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="upgradeBtn" class="btn">Upgrade Plan</button>
+            <button id="billingBtn" style="background:transparent;border:0;color:var(--muted)">Billing</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 8px 0">Version Control & Trash</h3>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div style="flex:1">
+            <div class="muted-2">Select a file to see versions or recover deleted items from Trash.</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="viewTrashBtn" style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px">View Trash</button>
+            <button id="viewVersionsBtn" class="btn">View Versions</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="modalRoot"></div>
+
+  <script>
+  /* ----------------------------
+     Client-side "cloud" simulation logic
+     - Uses localStorage for persistence
+     - Simulates encryption with base64 (for demo only)
+     ----------------------------- */
+
+  // Utility functions
+  const uid = (n=8) => Math.random().toString(36).slice(2,2+n);
+  const now = () => new Date().toISOString();
+  const kb = (v) => (v/1024).toFixed(2)+' KB';
+  const mb = (v) => (v/1024/1024).toFixed(2)+' MB';
+  const prettySize = (bytes) => {
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return (bytes/1024).toFixed(2) + ' KB';
+    if(bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(2) + ' MB';
+    return (bytes/1024/1024/1024).toFixed(2) + ' GB';
+  };
+
+  // ============================
+  // App State & Persistence
+  // ============================
+  const DEFAULT_PLAN = { name:'Free', quotaBytes: 5 * 1024 * 1024 * 1024 }; // 5GB
+  const STORAGE_KEY = 'cloudsim_state_v1';
+  const SESSION_KEY = 'cloudsim_session';
+
+  let state = {
+    users: [], // {id,name,email,password,isVerified,storageUsedBytes,plan}
+    files: [], // {id,name,size,type,parentId,ownerId,versions:[{id,blob,meta}],shared:[{userId,perm}],deleted:false,createdAt,updatedAt}
+    activity: [], // {ts,msg}
+    sharedLinks: [], // {id,fileId,perm,expires}
+    trash: [],
+  };
+
+  // load state
+  function loadState(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{
+        state = JSON.parse(raw);
+      }catch(e){
+        console.error('Corrupt state, resetting', e);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // session
+  function getSession(){
+    const s = localStorage.getItem(SESSION_KEY);
+    return s ? JSON.parse(s) : null;
+  }
+  function setSession(session){ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); }
+  function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+  // init
+  loadState();
+
+  // if no sample user -> create guest/demo user
+  if(!state.users || state.users.length===0){
+    const demoId = uid(6);
+    state.users = [{
+      id: demoId,
+      name: 'Demo User',
+      email: 'demo@cloudsim.local',
+      password: 'demo', // plain: demo only for demonstration
+      isVerified: true,
+      storageUsedBytes: 0,
+      plan: DEFAULT_PLAN,
+      twoFA: false
+    }];
+    state.files = [];
+    state.activity = [{ts:now(),msg:'Demo account created'}];
+    saveState();
+  }
+
+  // =============
+  // Simulated "encryption" & blob helpers
+  // =============
+  function pseudoEncryptText(text){
+    // simple base64 – DO NOT USE in real apps
+    return btoa(unescape(encodeURIComponent(text)));
+  }
+  function pseudoDecryptText(b64){
+    return decodeURIComponent(escape(atob(b64)));
+  }
+
+  // files are stored as metadata + dataUrl (base64) in state (client-only)
+  async function fileToDataUrl(file){
+    return new Promise((res,rej)=>{
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ================
+  // Activity log
+  // ================
+  function logActivity(msg){
+    state.activity.unshift({ts:now(),msg});
+    if(state.activity.length>200) state.activity.pop();
+    saveState();
+    renderActivity();
+  }
+  function renderActivity(){
+    const el = document.getElementById('activityLog');
+    el.innerHTML = state.activity.slice(0,50).map(a=>`<div style="margin-bottom:6px"><strong style="color:var(--accent)">${a.msg}</strong><div class="muted small-muted">${a.ts}</div></div>`).join('');
+  }
+
+  // ===============
+  // Auth & Registration (client-only)
+  // ===============
+  function renderAuthArea(){
+    const root = document.getElementById('auth-area');
+    const session = getSession();
+    if(session && session.userId){
+      const u = state.users.find(x=>x.id===session.userId);
+      root.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(90deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;color:#042027">${u.name.split(' ')[0][0] || 'U'}</div>
+          <div style="flex:1">
+            <div style="font-weight:700">${u.name}</div>
+            <div class="small-muted">${u.email}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="manageAccountBtn" class="btn" style="background:rgba(255,255,255,0.04);color:var(--accent)">Manage</button>
+          <button id="doLogoutBtn" class="btn" style="background:linear-gradient(90deg,#fb7185,#f97316)">Logout</button>
+        </div>
+      `;
+      document.getElementById('manageAccountBtn').addEventListener('click', ()=>openAccountModal(u.id));
+      document.getElementById('doLogoutBtn').addEventListener('click', ()=>doLogout());
+    }else{
+      root.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-weight:700">Welcome</div>
+          <div class="small-muted">Create an account or sign in to simulate the full process.</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="openRegisterBtn" class="btn">Register</button>
+            <button id="openLoginBtn" class="btn" style="background:rgba(255,255,255,0.04);color:var(--accent)">Login</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('openRegisterBtn').addEventListener('click', ()=>openRegisterModal());
+      document.getElementById('openLoginBtn').addEventListener('click', ()=>openLoginModal());
+    }
+    updateTopUserTag();
+  }
+
+  function updateTopUserTag(){
+    const session = getSession();
+    const tag = document.getElementById('current-user-tag');
+    const status = document.getElementById('session-status');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(session && session.userId){
+      const u = state.users.find(x=>x.id===session.userId);
+      tag.textContent = u.name;
+      status.textContent = 'Signed in';
+      logoutBtn.style.display = 'inline-block';
+    }else{
+      tag.textContent = 'Guest';
+      status.textContent = 'Not signed in';
+      logoutBtn.style.display = 'none';
+    }
+  }
+
+  // Registration modal
+  function openRegisterModal(){
+    showModal(`
+      <h3 style="margin:0 0 8px 0">Create Account</h3>
+      <label>Name</label><input id="regName" />
+      <label>Email</label><input id="regEmail" />
+      <label>Password</label><input id="regPass" type="password" />
+      <label>Initial plan</label>
+      <select id="regPlan"><option value="free">Free - 5 GB</option><option value="pro">Pro - 100 GB</option></select>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="doRegisterBtn" class="btn">Create Account</button>
+        <button id="cancelRegBtn" style="background:transparent;border:0">Cancel</button>
+      </div>
+    `);
+    document.getElementById('cancelRegBtn').addEventListener('click', closeModal);
+    document.getElementById('doRegisterBtn').addEventListener('click', ()=>{
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const pass = document.getElementById('regPass').value;
+      const planVal = document.getElementById('regPlan').value;
+      if(!name || !email || !pass){ alert('Fill all fields'); return; }
+      if(state.users.some(u=>u.email===email)){ alert('Email already used'); return; }
+      const id = uid(6);
+      const plan = planVal === 'pro' ? {name:'Pro', quotaBytes: 100 * 1024 * 1024 * 1024} : DEFAULT_PLAN;
+      const user = {id,name,email,password:pass,isVerified:false,storageUsedBytes:0,plan,twoFA:false};
+      state.users.push(user);
+      saveState();
+      logActivity(`User registered: ${email}`);
+      closeModal();
+      // simulate verification step
+      showModal(`
+        <h3>Verify Email</h3>
+        <p class="muted-2">We sent a verification code to <strong>${email}</strong> (simulated).</p>
+        <label>Verification Code</label><input id="verCode" placeholder="enter 123456" />
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="confirmVerify" class="btn">Verify</button>
+          <button id="skipVerify" style="background:transparent;border:0">Skip (demo)</button>
+        </div>
+      `);
+      document.getElementById('confirmVerify').addEventListener('click', ()=>{
+        const code = document.getElementById('verCode').value.trim();
+        if(code === '123456' || code === 'demo'){
+          user.isVerified = true;
+          saveState();
+          logActivity(`Email verified for ${email}`);
+          closeModal();
+          autoLogin(user.email, user.password);
+        }else{
+          alert('Wrong code. For demo use: 123456 or demo');
+        }
+      });
+      document.getElementById('skipVerify').addEventListener('click', ()=>{
+        user.isVerified = true;
+        saveState();
+        logActivity(`Email verification skipped for ${email} (demo)`);
+        closeModal();
+        autoLogin(user.email, user.password);
+      });
+    });
+  }
+
+  // Login modal
+  function openLoginModal(){
+    showModal(`
+      <h3>Sign In</h3>
+      <label>Email</label><input id="loginEmail" />
+      <label>Password</label><input id="loginPass" type="password" />
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="doLoginBtn" class="btn">Sign In</button>
+        <button id="cancelLoginBtn" style="background:transparent;border:0">Cancel</button>
+      </div>
+    `);
+    document.getElementById('cancelLoginBtn').addEventListener('click', closeModal);
+    document.getElementById('doLoginBtn').addEventListener('click', ()=>{
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      autoLogin(email, pass);
+    });
+  }
+
+  function autoLogin(email, pass){
+    const user = state.users.find(u=>u.email===email && u.password===pass);
+    if(!user){ alert('Invalid credentials (demo).'); return; }
+    // simulate 2FA if enabled
+    if(user.twoFA){
+      closeModal();
+      showModal(`
+        <h3>2FA Required</h3><p class="muted-2">Enter code from your authenticator (demo: 000000).</p>
+        <input id="otp" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="doOtp" class="btn">Verify</button>
+        </div>
+      `);
+      document.getElementById('doOtp').addEventListener('click', ()=>{
+        const code = document.getElementById('otp').value.trim();
+        if(code === '000000'){ completeLogin(user); } else alert('Wrong code');
+      });
+    } else {
+      completeLogin(user);
+    }
+  }
+
+  function completeLogin(user){
+    closeModal();
+    const token = uid(24);
+    setSession({token, userId:user.id, createdAt: now()});
+    renderAuthArea();
+    logActivity(`User signed in: ${user.email}`);
+    renderFiles();
+  }
+
+  function doLogout(){
+    const session = getSession();
+    if(session && session.userId){
+      logActivity(`User logged out (${session.userId})`);
+    }
+    clearSession();
+    renderAuthArea();
+    updateTopUserTag();
+  }
+
+  // Manage account modal (for demo)
+  function openAccountModal(userId){
+    const u = state.users.find(x=>x.id===userId);
+    showModal(`
+      <h3>Account</h3>
+      <label>Name</label><input id="acctName" value="${u.name}" />
+      <label>Email</label><input id="acctEmail" value="${u.email}" />
+      <label>2FA</label>
+      <select id="acct2fa"><option value="false">Disabled</option><option value="true"${u.twoFA ? ' selected' : ''}>Enabled</option></select>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="saveAcct" class="btn">Save</button>
+        <button id="closeAcct" style="background:transparent;border:0">Close</button>
+      </div>
+    `);
+    document.getElementById('closeAcct').addEventListener('click', closeModal);
+    document.getElementById('saveAcct').addEventListener('click', ()=>{
+      u.name = document.getElementById('acctName').value.trim();
+      u.email = document.getElementById('acctEmail').value.trim();
+      u.twoFA = document.getElementById('acct2fa').value === 'true';
+      saveState();
+      logActivity(`Account updated: ${u.email}`);
+      closeModal();
+      renderAuthArea();
+      renderFiles();
+    });
+  }
+
+  // ====================
+  // File operations
+  // ====================
+  function calculateUsedBytesForUser(userId){
+    const userFiles = state.files.filter(f => f.ownerId === userId && !f.deleted);
+    return userFiles.reduce((s,f)=>s + (f.size || 0), 0);
+  }
+
+  function updateStorageMeter(){
+    const session = getSession();
+    const user = session ? state.users.find(u=>u.id===session.userId) : null;
+    const used = user ? calculateUsedBytesForUser(user.id) : 0;
+    const quota = user ? user.plan.quotaBytes : DEFAULT_PLAN.quotaBytes;
+    const pct = Math.min(100, Math.round((used / quota) * 100));
+    document.getElementById('storage-bar').style.width = pct + '%';
+    document.getElementById('storage-text').textContent = `${prettySize(used)} / ${prettySize(quota)}`;
+    document.getElementById('planName').textContent = user ? user.plan.name : DEFAULT_PLAN.name;
+    document.getElementById('planDesc').textContent = user ? `${user.plan.name} Plan — quota: ${prettySize(user.plan.quotaBytes)}` : 'Not signed in';
+    // show upgrade prompt if >95%
+    if(used / quota > 0.95){
+      showBanner(`Storage nearly full (${pct}%). Consider upgrading your plan.`, 'warning');
+    }
+    saveState();
+  }
+
+  function showBanner(msg, type='info'){
+    // small transient message - for demo we just console and activity
+    logActivity(`[NOTICE] ${msg}`);
+  }
+
+  // Render files list
+  function renderFiles(filter = {}) {
+    // filter: view: all/my/shared/trash, search
+    const filesEl = document.getElementById('filesList');
+    const session = getSession();
+    const userId = session && session.userId;
+    let files = state.files.filter(f => !f.deleted);
+
+    const view = document.querySelector('.nav button.active')?.getAttribute('data-view') || 'all';
+    if(view === 'my' && userId) files = files.filter(f => f.ownerId === userId);
+    if(view === 'shared' && userId) files = files.filter(f => (f.shared && f.shared.some(s => s.userId === userId)));
+    if(view === 'trash') files = state.files.filter(f => f.deleted);
+
+    const query = (document.getElementById('searchInput').value || '').toLowerCase();
+    if(query) files = files.filter(f => f.name.toLowerCase().includes(query));
+
+    if(files.length === 0){
+      filesEl.innerHTML = '<div class="muted-2">No files found.</div>';
+      return;
+    }
+
+    filesEl.innerHTML = '';
+    files.forEach(f=>{
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      row.innerHTML = `
+        <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#0ea5b1,#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700">${f.name[0] || 'F'}</div>
+        <div class="file-meta">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="font-weight:700">${f.name}</div>
+            <div class="tag">${f.type || 'file'}</div>
+          </div>
+          <div class="small-muted">${prettySize(f.size || 0)} • ${new Date(f.createdAt).toLocaleString()}</div>
+        </div>
+        <div class="file-actions">
+          <button data-fileid="${f.id}" class="btn downloadBtn" style="background:rgba(255,255,255,0.04);color:var(--accent)">Download</button>
+          <button data-fileid="${f.id}" class="btn shareBtn" style="background:rgba(255,255,255,0.04)">Share</button>
+          <button data-fileid="${f.id}" class="btn renameBtn" style="background:transparent;border:0">Rename</button>
+          <button data-fileid="${f.id}" class="btn deleteBtn" style="background:linear-gradient(90deg,#ff6b6b,#f97316)">Delete</button>
+        </div>
+      `;
+      filesEl.appendChild(row);
+    });
+
+    // attach events
+    document.querySelectorAll('.downloadBtn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-fileid');
+        downloadFile(id);
+      });
+    });
+    document.querySelectorAll('.shareBtn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-fileid');
+        openShareModal(id);
+      });
+    });
+    document.querySelectorAll('.renameBtn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-fileid');
+        openRenameModal(id);
+      });
+    });
+    document.querySelectorAll('.deleteBtn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-fileid');
+        softDeleteFile(id);
+      });
+    });
+  }
+
+  async function uploadFilesList(fileList, parentId=null){
+    const session = getSession();
+    if(!session || !session.userId){ alert('Sign in to upload (demo)'); return; }
+    const user = state.users.find(u=>u.id === session.userId);
+
+    for(const file of Array.from(fileList)){
+      // check quota
+      const used = calculateUsedBytesForUser(user.id);
+      if(used + file.size > user.plan.quotaBytes){
+        showBanner('Upload blocked: quota exceeded. Please upgrade plan.');
+        break;
+      }
+      // simulate secure transfer + encryption with progress
+      logActivity(`Uploading ${file.name} (${prettySize(file.size)})`);
+      const dataUrl = await fileToDataUrl(file);
+      // "encrypt" content (demo)
+      const encrypted = pseudoEncryptText(dataUrl);
+      // create version
+      const version = { id: uid(6), ts: now(), data: encrypted, meta: {name:file.name, size:file.size, type:file.type} };
+      const fileObj = {
+        id: uid(8),
+        name: file.name,
+        size: file.size,
+        type: file.type || 'file',
+        parentId: parentId,
+        ownerId: user.id,
+        versions: [version],
+        shared: [],
+        deleted:false,
+        createdAt: now(),
+        updatedAt: now()
+      };
+      state.files.push(fileObj);
+      // update storage
+      user.storageUsedBytes = calculateUsedBytesForUser(user.id);
+      saveState();
+      logActivity(`Stored ${file.name} (encrypted)`);
+      updateStorageMeter();
+      renderFiles();
+      // simulate auto-versioning: keep multiple versions for same file name by id
+    }
+  }
+
+  function downloadFile(fileId){
+    const f = state.files.find(x=>x.id===fileId);
+    if(!f){ alert('File not found'); return; }
+    // get latest version
+    const v = f.versions[f.versions.length-1];
+    const decrypted = pseudoDecryptText(v.data); // data URL
+    // create blob from data URL
+    fetch(decrypted).then(res=>res.blob()).then(blob=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = f.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      logActivity(`Downloaded ${f.name}`);
+    }).catch(err=>{
+      console.error(err);
+      alert('Download failed (demo)');
+    });
+  }
+
+  function openRenameModal(fileId){
+    const f = state.files.find(x=>x.id===fileId);
+    if(!f) return;
+    showModal(`
+      <h3>Rename File</h3>
+      <label>New name</label>
+      <input id="newName" value="${f.name}" />
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button id="doRename" class="btn">Rename</button>
+        <button id="cancelRename" style="background:transparent;border:0">Cancel</button>
+      </div>
+    `);
+    document.getElementById('cancelRename').addEventListener('click', closeModal);
+    document.getElementById('doRename').addEventListener('click', ()=>{
+      const v = document.getElementById('newName').value.trim();
+      if(!v) return alert('Enter a name');
+      f.name = v;
+      f.updatedAt = now();
+      // create a new version to simulate change
+      const latest = f.versions[f.versions.length-1];
+      f.versions.push({id:uid(6),ts:now(),data:latest.data,meta:{...latest.meta,name:v}});
+      saveState();
+      logActivity(`Renamed file ${fileId} -> ${v}`);
+      closeModal();
+      renderFiles();
+    });
+  }
+
+  function openShareModal(fileId){
+    const f = state.files.find(x=>x.id===fileId);
+    if(!f) return;
+    // list users
+    const userOptions = state.users.map(u=>`<option value="${u.id}">${u.name} (${u.email})</option>`).join('');
+    showModal(`
+      <h3>Share & Permissions — ${f.name}</h3>
+      <label>Generate shareable link</label>
+      <div style="display:flex;gap:8px">
+        <select id="linkPerm"><option value="view">View</option><option value="edit">Edit</option><option value="download">Download</option></select>
+        <button id="genLink" class="btn">Generate</button>
+      </div>
+      <hr/>
+      <label>Invite user (set permission)</label>
+      <div style="display:flex;gap:8px">
+        <select id="inviteUser">${userOptions}</select>
+        <select id="invitePerm"><option value="view">View</option><option value="edit">Edit</option><option value="comment">Comment</option></select>
+        <button id="inviteBtn" class="btn">Invite</button>
+      </div>
+      <div style="margin-top:12px">
+        <div class="small-muted">Current collaborators:</div>
+        <div id="collabList" style="margin-top:8px">${(f.shared && f.shared.length>0) ? f.shared.map(s=>`<div>${state.users.find(u=>u.id===s.userId)?.name || s.userId} — ${s.perm}</div>`).join('') : '<div class="muted-2">None</div>'}</div>
+      </div>
+    `);
+    document.getElementById('genLink').addEventListener('click', ()=>{
+      const perm = document.getElementById('linkPerm').value;
+      const linkId = uid(10);
+      state.sharedLinks.push({id:linkId, fileId: f.id, perm, createdAt:now(), expires: null});
+      saveState();
+      const shareUrl = location.href.split('#')[0] + `#share=${linkId}`;
+      const coll = document.getElementById('collabList');
+      coll.innerHTML += `<div>Link: <input style="width:60%" value="${shareUrl}" readonly /></div>`;
+      logActivity(`Generated share link for ${f.name} (${perm})`);
+    });
+    document.getElementById('inviteBtn').addEventListener('click', ()=>{
+      const target = document.getElementById('inviteUser').value;
+      const perm = document.getElementById('invitePerm').value;
+      f.shared = f.shared || [];
+      if(!f.shared.find(s=>s.userId === target)){
+        f.shared.push({userId: target, perm});
+        saveState();
+        logActivity(`Invited ${target} to ${f.name} as ${perm}`);
+        renderFiles();
+        closeModal();
+        openShareModal(fileId);
+      }else{
+        alert('User already invited');
+      }
+    });
+  }
+
+  function softDeleteFile(fileId){
+    const f = state.files.find(x=>x.id===fileId);
+    if(!f) return;
+    f.deleted = true;
+    f.deletedAt = now();
+    state.trash = state.trash || [];
+    state.trash.unshift({id:f.id, name:f.name, deletedAt:f.deletedAt});
+    saveState();
+    logActivity(`Moved to trash: ${f.name}`);
+    renderFiles();
+    updateStorageMeter();
+  }
+
+  function viewTrash(){
+    const trash = state.files.filter(f=>f.deleted);
+    showModal(`<h3>Trash (${trash.length})</h3><div style="max-height:300px;overflow:auto">${trash.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid rgba(255,255,255,0.02)"><div><strong>${t.name}</strong><div class="small-muted">${t.deletedAt}</div></div><div style="display:flex;gap:8px"><button data-id="${t.id}" class="btn restoreBtn" style="background:rgba(255,255,255,0.04);color:var(--accent)">Restore</button><button data-id="${t.id}" class="btn delPerm" style="background:linear-gradient(90deg,#ff6b6b,#f97316)">Delete Permanently</button></div></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="closeTrash" class="btn">Close</button></div>`);
+    document.querySelectorAll('.restoreBtn').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-id');
+        const f = state.files.find(x=>x.id===id);
+        if(f){ f.deleted = false; f.deletedAt = null; saveState(); logActivity(`Restored ${f.name}`); closeModal(); viewTrash(); renderFiles(); }
+      });
+    });
+    document.querySelectorAll('.delPerm').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-id');
+        state.files = state.files.filter(x=>x.id!==id);
+        saveState();
+        logActivity(`Permanently deleted ${id}`);
+        closeModal(); viewTrash(); renderFiles(); updateStorageMeter();
+      });
+    });
+    document.getElementById('closeTrash').addEventListener('click', closeModal);
+  }
+
+  function viewVersions(){
+    const file = state.files[0]; // for demo pick first or user selected? We'll show selection modal
+    showModal(`<h3>Choose file to view versions</h3>
+      <div style="max-height:300px;overflow:auto">${state.files.filter(f=>!f.deleted).map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid rgba(255,255,255,0.02)"><div><strong>${f.name}</strong><div class="small-muted">Versions: ${f.versions.length}</div></div><div><button data-id="${f.id}" class="btn viewVers">View</button></div></div>`).join('')}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="closeVers" class="btn">Close</button></div>`);
+    document.querySelectorAll('.viewVers').forEach(b=>{
+      b.addEventListener('click', e=>{
+        const id = e.target.getAttribute('data-id');
+        const f = state.files.find(x=>x.id===id);
+        closeModal();
+        showModal(`<h3>Versions — ${f.name}</h3><div style="max-height:360px;overflow:auto">${f.versions.map(v=>`<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.02)"><div style="display:flex;justify-content:space-between"><div><strong>${v.meta.name}</strong><div class="small-muted">uploaded: ${v.ts} • ${prettySize(v.meta.size)}</div></div><div><button data-vid="${v.id}" class="btn downloadVer" style="background:rgba(255,255,255,0.04);color:var(--accent)">Download</button></div></div></div>`).join('')}</div><div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="closeVers2" class="btn">Close</button></div>`);
+        document.querySelectorAll('.downloadVer').forEach(b=>{
+          b.addEventListener('click', e=>{
+            const vid = e.target.getAttribute('data-vid');
+            const ver = f.versions.find(x=>x.id===vid);
+            const decrypted = pseudoDecryptText(ver.data);
+            fetch(decrypted).then(r=>r.blob()).then(blob=>{
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = ver.meta.name;
+              document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+              logActivity(`Downloaded version ${vid} of ${f.name}`);
+            });
+          });
+        });
+        document.getElementById('closeVers2').addEventListener('click', closeModal);
+      });
+    });
+    document.getElementById('closeVers').addEventListener('click', closeModal);
+  }
+
+  // ======================
+  // UI helpers: modal
+  // ======================
+  function showModal(html){
+    const root = document.getElementById('modalRoot');
+    root.innerHTML = `
+      <div class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal">
+          ${html}
+        </div>
+      </div>
+    `;
+    // close on ESC
+    document.addEventListener('keydown', onEscClose);
+  }
+  function closeModal(){
+    const root = document.getElementById('modalRoot');
+    root.innerHTML = '';
+    document.removeEventListener('keydown', onEscClose);
+  }
+  function onEscClose(e){ if(e.key==='Escape') closeModal(); }
+
+  // ======================
+  // Initialization & events
+  // ======================
+  document.addEventListener('DOMContentLoaded', ()=>{
+
+    renderAuthArea();
+    renderActivity();
+    updateStorageMeter();
+    renderFiles();
+
+    // sidebar nav actions
+    document.querySelectorAll('.nav button').forEach(b=>{
+      b.addEventListener('click', e=>{
+        document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+        e.target.classList.add('active');
+        renderFiles();
+      });
+    });
+
+    // top buttons
+    document.getElementById('showProcessBtn').addEventListener('click', renderProcessFlow);
+    document.getElementById('simulateUploadBtn').addEventListener('click', ()=>simulateSampleUpload());
+    document.getElementById('clearDataBtn').addEventListener('click', ()=>{ if(confirm('Reset demo state?')){ localStorage.removeItem('${STORAGE_KEY}'); localStorage.removeItem('${SESSION_KEY}'); location.reload(); } });
+
+    document.getElementById('internalUploadBtn').addEventListener('click', ()=>document.getElementById('fileInput').click());
+    document.getElementById('fileInput').addEventListener('change', (e)=>uploadFilesList(e.target.files));
+
+    const uploadArea = document.getElementById('uploadArea');
+    ['dragenter','dragover'].forEach(ev=>uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); uploadArea.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev=>uploadArea.addEventListener(ev,(e)=>{ e.preventDefault(); uploadArea.classList.remove('dragover'); }));
+    uploadArea.addEventListener('drop', (e)=>{
+      const files = e.dataTransfer.files;
+      uploadFilesList(files);
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', ()=>document.getElementById('fileInput').click());
+    document.getElementById('newFolderBtn').addEventListener('click', ()=>createFolderPrompt());
+    document.getElementById('logoutBtn').addEventListener('click', ()=>doLogout());
+    document.getElementById('linkShareBtn').addEventListener('click', ()=>openShareModalPrompt());
+    document.getElementById('upgradeBtn').addEventListener('click', ()=>upgradePlan());
+    document.getElementById('viewTrashBtn').addEventListener('click', ()=>viewTrash());
+    document.getElementById('viewVersionsBtn').addEventListener('click', ()=>viewVersions());
+
+    document.getElementById('searchInput').addEventListener('input', ()=>renderFiles());
+
+    // small: open on hash share
+    if(location.hash.startsWith('#share=')){
+      const id = location.hash.split('=')[1];
+      const link = state.sharedLinks.find(l=>l.id === id);
+      if(link){
+        const f = state.files.find(f=>f.id === link.fileId);
+        alert(`Shared link for ${f.name} with perm ${link.perm} (demo)`);
+        logActivity(`Shared link opened for ${f.name}`);
+      }
+    }
+  });
+
+  // ======================
+  // Misc features
+  // ======================
+  function createFolderPrompt(){
+    const session = getSession();
+    if(!session) return alert('Sign in to create folders (demo)');
+    showModal(`<h3>Create Folder</h3><label>Folder name</label><input id="folderName" /><div style="display:flex;gap:8px;margin-top:12px"><button id="doFolder" class="btn">Create</button><button id="cancelFolder" style="background:transparent;border:0">Cancel</button></div>`);
+    document.getElementById('cancelFolder').addEventListener('click', closeModal);
+    document.getElementById('doFolder').addEventListener('click', ()=>{
+      const name = document.getElementById('folderName').value.trim();
+      if(!name) return alert('Enter name');
+      const user = state.users.find(u=>u.id === getSession().userId);
+      const folder = { id: uid(8), name, size:0, type:'folder', parentId:null, ownerId:user.id, versions:[], shared:[], deleted:false, createdAt:now(), updatedAt:now() };
+      state.files.push(folder);
+      saveState();
+      logActivity(`Folder created: ${name}`);
+      closeModal();
+      renderFiles();
+    });
+  }
+
+  function openShareModalPrompt(){
+    // quick select first file
+    const session = getSession();
+    if(!session) return alert('Sign in to share files (demo)');
+    const userFiles = state.files.filter(f=>f.ownerId === session.userId && !f.deleted);
+    if(userFiles.length === 0) return alert('No files to share. Upload first.');
+    openShareModal(userFiles[0].id);
+  }
+
+  function upgradePlan(){
+    const session = getSession();
+    if(!session) return alert('Sign in to manage subscription (demo)');
+    const user = state.users.find(u=>u.id===session.userId);
+    showModal(`<h3>Upgrade Plan</h3><p class="muted-2">Choose a plan (simulated billing)</p><div style="display:flex;gap:8px"><button id="toPro" class="btn">Pro — 100 GB</button><button id="toPlus" style="background:rgba(255,255,255,0.04);border:0">Cancel</button></div>`);
+    document.getElementById('toPro').addEventListener('click', ()=>{
+      user.plan = {name:'Pro', quotaBytes: 100 * 1024 * 1024 * 1024};
+      saveState();
+      logActivity(`User ${user.email} upgraded to Pro (simulated)`);
+      closeModal();
+      updateStorageMeter();
+      renderAuthArea();
+    });
+    document.getElementById('toPlus').addEventListener('click', closeModal);
+  }
+
+  function simulateSampleUpload(){
+    // create a small text file blob and upload
+    const bl = new Blob([`Demo file uploaded at ${new Date().toLocaleString()}`], {type:'text/plain'});
+    const f = new File([bl], `demo-note-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`, {type:'text/plain'});
+    uploadFilesList([f]);
+  }
+
+  function renderProcessFlow(){
+    const flowRoot = document.getElementById('processFlow');
+    const steps = [
+      {no:'1', title:'User Registration', desc:'User signs up with name, email & password. System verifies contact and allocates initial storage.'},
+      {no:'2', title:'User Login', desc:'User authenticates (optional 2FA). Dashboard is displayed.'},
+      {no:'3', title:'Uploading Files', desc:'Secure transfer (SSL/TLS), client-side encryption (demo), metadata stored.'},
+      {no:'4', title:'File Management', desc:'Create folders, rename, move, delete. Drag & drop support.'},
+      {no:'5', title:'File Sharing & Collaboration', desc:'Generate shareable link or invite users. Set permissions.'},
+      {no:'6', title:'Version Control & Backup', desc:'Multiple versions saved. Deleted files moved to Trash.'},
+      {no:'7', title:'Access Control & Security', desc:'ACLs for each file; activity logging and admin roles.'},
+      {no:'8', title:'Downloading & Accessing Files', desc:'Files available for secure download; offline apps may be supported.'},
+      {no:'9', title:'Storage Monitoring & Subscription', desc:'Dashboard shows usage; prompt to upgrade when full.'},
+      {no:'10', title:'Logout / Session End', desc:'Logout and tokens invalidated, sessions time out for security.'},
+    ];
+    flowRoot.innerHTML = steps.map(s=>`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01)"><div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(90deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:800">${s.no}</div><div><div style="font-weight:700">${s.title}</div><div class="muted-2">${s.desc}</div></div></div>`).join('');
+  }
+
+  // ============================================
+  // Initial render & helpers after script load
+  // ============================================
+  renderAuthArea();
+  renderActivity();
+  updateStorageMeter();
+  renderFiles();
+
+  </script>
+</body>
+</html>
